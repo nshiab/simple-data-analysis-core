@@ -8,7 +8,7 @@
 
 > **getDescription**(): `Promise`\<`object`[]\>
 
-Defined in: [src/class/SimpleTable.ts:6911](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6911)
+Defined in: [src/class/SimpleTable.ts:6938](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6938)
 
 Returns descriptive statistical information about the columns, including details like data types, number of null values, and distinct values.
 

@@ -6197,7 +6197,10 @@ export default class SimpleTable extends Simple {
 
   /**
    * Creates a summary table from selected columns, optionally grouped by other columns.
-   * This method allows you to aggregate data, calculate statistics (e.g., count, mean, sum), and group results by categorical columns.
+   * This method allows you to aggregate data, calculate statistics (e.g., count,
+   * mean, sum), and group results by categorical columns.
+   * With `keepRows: true`, every original row is retained and the statistics
+   * are added as new columns.
    *
    * @example
    * ```ts
@@ -6273,6 +6276,28 @@ export default class SimpleTable extends Simple {
    * // Summarize 'timestamp_column' by converting to milliseconds first
    * await table.summarize({ columns: "timestamp_column", datesToMs: true, stats: "mean" }).log();
    * ```
+   *
+   * @example
+   * ```ts
+   * // Add department statistics to every original row
+   * await table.summarize({
+   *   columns: "salary",
+   *   by: "department",
+   *   stats: { departmentMean: "mean", departmentTotal: "sum" },
+   *   keepRows: true,
+   * }).log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Store the original rows with their group counts in a new table
+   * const enriched = await table.summarize({
+   *   by: "department",
+   *   stats: { departmentCount: "count" },
+   *   keepRows: true,
+   *   outputTable: true,
+   * }).log();
+   * ```
    * @param options - An object with configuration options for summarization:
    * @param options.columns - The column name or an array of column names to summarize. If omitted, only the row count is returned.
    * @param options.by - The column name or an array of column names to group by.
@@ -6280,7 +6305,8 @@ export default class SimpleTable extends Simple {
    * @param options.decimals - The number of decimal places to round the summarized columns. Defaults to `undefined` (no rounding).
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
    * @param options.datesToMs - If `true`, timestamps, dates, and times will be converted to milliseconds before summarizing. This is useful when summarizing mixed data types (numbers and dates) as columns must be of the same type for aggregation.
-   * @returns A table instance containing the summarized data (either the current table or a new table), so methods can be chained. When summarizing more than one column, a `column` column identifies which input column each row summarizes.
+   * @param options.keepRows - If `true`, keeps every original row and adds the statistics as columns. Supports at most one summarized column. Defaults to `false`.
+   * @returns A table instance containing the summarized data, or the original rows plus statistics when `keepRows` is `true`, so methods can be chained. When summarizing more than one column, a `column` column identifies which input column each row summarizes.
    * @category Analyzing Data
    */
   summarize(
@@ -6331,6 +6357,7 @@ export default class SimpleTable extends Simple {
       decimals?: number;
       outputTable?: string | boolean;
       datesToMs?: boolean;
+      keepRows?: boolean;
     } = {},
   ): this {
     return summarize(this, options) as this;

@@ -1,4 +1,5 @@
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import getStatExpression, {
   allStats,
   isTemporalStatType,
@@ -20,6 +21,7 @@ type SummarizeOptions = {
   stats?: Stat | Stat[] | { [key: string]: Stat };
   decimals?: number;
   datesToMs?: boolean;
+  keepRows?: boolean;
 };
 
 export default function summarize(
@@ -27,8 +29,13 @@ export default function summarize(
   options: SummarizeOptions = {},
 ): SimpleTable {
   options = structuredClone(options);
-  options.outputTable = resolveOutputTable(simpleTable, options.outputTable);
   const columns = getSummarizeColumns(options);
+  if (options.keepRows === true && columns.length > 1) {
+    throw new Error(
+      "summarize() with keepRows: true supports at most one summarized column. Summarize each column in a separate call.",
+    );
+  }
+  options.outputTable = resolveOutputTable(simpleTable, options.outputTable);
   const boundColumns = columns.length > 1 ? columns : [];
 
   if (typeof options.outputTable === "string") {
@@ -81,12 +88,11 @@ function getSummarizeColumns(options: SummarizeOptions): string[] {
   ];
 }
 
-function summarizeSelect(input: string, types: TableSchema, options: SummarizeOptions): string {
-  const by = options.by ? stringToArray(options.by) : [];
-  // Duplicated columns would duplicate rows now that the branches are combined
-  // with UNION ALL instead of a deduplicating UNION.
+function getSummarizeStats(options: SummarizeOptions): {
+  stats: Stat[];
+  outputColumns: string[] | undefined;
+} {
   const columns = getSummarizeColumns(options);
-
   let stats: Stat[];
   let outputColumns: string[] | undefined;
   if (options.stats === undefined) {
@@ -100,6 +106,61 @@ function summarizeSelect(input: string, types: TableSchema, options: SummarizeOp
     outputColumns = entries.map((d) => d[0]);
     stats = entries.map((d) => d[1]);
   }
+  return { stats, outputColumns };
+}
+
+function joinedSummarizeSelect(
+  input: string,
+  types: TableSchema,
+  options: SummarizeOptions,
+): string {
+  const by = options.by ? stringToArray(options.by) : [];
+  const { stats, outputColumns } = getSummarizeStats(options);
+  const names = outputColumns ?? stats;
+  if (names.length === 0) {
+    throw new Error(
+      "summarize() with keepRows: true requires at least one statistic in options.stats.",
+    );
+  }
+  assertNewColumns(types, names, "summarize()");
+  const existingNames = Object.keys(types).map((name) => name.toLowerCase());
+  const seen = new Set<string>();
+  for (const name of names) {
+    const normalized = name.toLowerCase();
+    if (existingNames.includes(normalized) || seen.has(normalized)) {
+      throw new Error(
+        `summarize() cannot add duplicate column ${quoteIdentifier(name)}. Choose a different name in options.stats.`,
+      );
+    }
+    seen.add(normalized);
+  }
+
+  const source = quoteIdentifier("summarize_source");
+  const summary = quoteIdentifier("summarize_summary");
+  const summaryQuery = summarizeSelect(input, types, { ...options, keepRows: false });
+  const condition =
+    by.length === 0
+      ? "TRUE"
+      : by
+          .map(
+            (column) =>
+              `${source}.${quoteIdentifier(column)} IS NOT DISTINCT FROM ${summary}.${quoteIdentifier(column)}`,
+          )
+          .join(" AND ");
+  return `SELECT ${source}.*, ${names.map((name) => `${summary}.${quoteIdentifier(name)}`).join(", ")}
+FROM ${input} AS ${source}
+LEFT JOIN (${summaryQuery}) AS ${summary} ON ${condition}`;
+}
+
+function summarizeSelect(input: string, types: TableSchema, options: SummarizeOptions): string {
+  if (options.keepRows === true) {
+    return joinedSummarizeSelect(input, types, options);
+  }
+  const by = options.by ? stringToArray(options.by) : [];
+  // Duplicated columns would duplicate rows now that the branches are combined
+  // with UNION ALL instead of a deduplicating UNION.
+  const columns = getSummarizeColumns(options);
+  const { stats, outputColumns } = getSummarizeStats(options);
 
   // The `column` output column is a row key that distinguishes rows for
   // different input columns, so it appears only when there is more than one.

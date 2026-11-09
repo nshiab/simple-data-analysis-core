@@ -380,7 +380,7 @@ A boolean indicating whether to include data types when logging a table.
 
 > **accumulate**(`column`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6386](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6386)
+Defined in: [src/class/SimpleTable.ts:6413](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6413)
 
 Computes the cumulative sum of values in a column. For this method to work properly, ensure your data is sorted first.
 
@@ -448,7 +448,7 @@ await table.accumulate("sales", "cumulativeSales", { decimals: 2 }).log();
 
 > **addSummaryRows**(`columns`, `labelColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6288](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6288)
+Defined in: [src/class/SimpleTable.ts:6315](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6315)
 
 Adds one or more summary rows to the table. Each row is calculated from
 the original rows before any summary rows are added. This is useful for
@@ -663,7 +663,7 @@ await table.columnProportions("sales", "sales_proportion", { by: ["region", "pro
 
 > **correlations**(`options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6492](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6492)
+Defined in: [src/class/SimpleTable.ts:6519](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6519)
 
 Calculates correlations between columns. If no `x` and `y` columns are specified, the method computes the correlations for all numeric column combinations.
 Note that correlation is symmetrical: the correlation of `x` with `y` is the same as `y` with `x`.
@@ -741,7 +741,7 @@ await table.correlations({ decimals: 2 }).log();
 
 > **indexValues**(`column`, `newColumn`, `reference`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6735](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6735)
+Defined in: [src/class/SimpleTable.ts:6762](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6762)
 
 Indexes a numeric column by dividing each value by a reference value and multiplying the result by a base value.
 
@@ -930,7 +930,7 @@ await table.indexValues("homePrice", "homePriceIndexed", {
 
 > **linearRegressions**(`options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6547](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6547)
+Defined in: [src/class/SimpleTable.ts:6574](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6574)
 
 Performs linear regression analysis. The results include the slope, the y-intercept, and the R-squared value.
 If no `x` and `y` columns are specified, the method computes linear regression analysis for all numeric column permutations.
@@ -1009,7 +1009,7 @@ await table.linearRegressions({ decimals: 3 }).log();
 
 > **normalize**(`column`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6666](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6666)
+Defined in: [src/class/SimpleTable.ts:6693](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6693)
 
 Normalizes the values in a column using min-max normalization.
 
@@ -1081,7 +1081,7 @@ await table.normalize("score", "scaledScore", { range: [0, 10] }).log();
 
 > **outliersIQR**(`column`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6580](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6580)
+Defined in: [src/class/SimpleTable.ts:6607](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6607)
 
 Identifies outliers in a specified column using the Interquartile Range (IQR) method.
 
@@ -1376,7 +1376,7 @@ await table.ranks("sales", "salesRank", { by: ["department", "city"] }).log();
 
 > **rolling**(`column`, `newColumn`, `stat`, `preceding`, `following`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6435](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6435)
+Defined in: [src/class/SimpleTable.ts:6462](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6462)
 
 Computes rolling aggregations (e.g., rolling average, min, max) over a specified column.
 For rows without enough preceding or following rows to form a complete window, `NULL` will be returned.
@@ -1699,10 +1699,13 @@ await table
 
 > **summarize**(`options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6192](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6192)
+Defined in: [src/class/SimpleTable.ts:6218](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6218)
 
 Creates a summary table from selected columns, optionally grouped by other columns.
-This method allows you to aggregate data, calculate statistics (e.g., count, mean, sum), and group results by categorical columns.
+This method allows you to aggregate data, calculate statistics (e.g., count,
+mean, sum), and group results by categorical columns.
+With `keepRows: true`, every original row is retained and the statistics
+are added as new columns.
 
 ###### Parameters
 
@@ -1734,6 +1737,12 @@ If `true`, timestamps, dates, and times will be converted to milliseconds before
 
 The number of decimal places to round the summarized columns. Defaults to `undefined` (no rounding).
 
+###### keepRows?
+
+`boolean`
+
+If `true`, keeps every original row and adds the statistics as columns. Supports at most one summarized column. Defaults to `false`.
+
 ###### outputTable?
 
 `string` \| `boolean`
@@ -1750,7 +1759,7 @@ The statistics to compute. Can be a single statistic (e.g., `"mean"`), an array 
 
 `this`
 
-A table instance containing the summarized data (either the current table or a new table), so methods can be chained. When summarizing more than one column, a `column` column identifies which input column each row summarizes.
+A table instance containing the summarized data, or the original rows plus statistics when `keepRows` is `true`, so methods can be chained. When summarizing more than one column, a `column` column identifies which input column each row summarizes.
 
 ###### Examples
 
@@ -1817,11 +1826,31 @@ await table.summarize({ columns: ["price", "cost"], decimals: 2 }).log();
 await table.summarize({ columns: "timestamp_column", datesToMs: true, stats: "mean" }).log();
 ```
 
+```ts
+// Add department statistics to every original row
+await table.summarize({
+  columns: "salary",
+  by: "department",
+  stats: { departmentMean: "mean", departmentTotal: "sum" },
+  keepRows: true,
+}).log();
+```
+
+```ts
+// Store the original rows with their group counts in a new table
+const enriched = await table.summarize({
+  by: "department",
+  stats: { departmentCount: "count" },
+  keepRows: true,
+  outputTable: true,
+}).log();
+```
+
 ##### zScore()
 
 > **zScore**(`column`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6619](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6619)
+Defined in: [src/class/SimpleTable.ts:6646](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6646)
 
 Computes the Z-score for values in a specified column.
 
@@ -1884,7 +1913,7 @@ await table.zScore("score", "scoreZScore", { decimals: 2 }).log();
 
 > **cache**(`compute`, `options?`): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:9033](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9033)
+Defined in: [src/class/SimpleTable.ts:9060](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9060)
 
 Caches the results of computations in `./.sda-cache`.
 You should add `./.sda-cache` to your `.gitignore` file.
@@ -2483,7 +2512,7 @@ await table.renameColumns({ "product_id": "productId" }, { strict: false }).log(
 
 > **writeData**(`file`, `options?`): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:8856](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8856)
+Defined in: [src/class/SimpleTable.ts:8883](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8883)
 
 Writes the table's data to a file in various formats (CSV, JSON, Parquet, DuckDB, SQLite).
 Tables with geometry columns must use `writeGeoData()` instead.
@@ -2563,7 +2592,7 @@ await table.writeData("./output_dates.json", { formatDates: true });
 
 > **writeGeoData**(`file`, `options?`): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:8914](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8914)
+Defined in: [src/class/SimpleTable.ts:8941](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8941)
 
 Writes the table's geospatial data to a file in GeoJSON, GeoParquet, or Shapefile format.
 If the specified path does not exist, it will be created.
@@ -2652,7 +2681,7 @@ await table.writeGeoData("./output_high_precision.geojson", {
 
 > **addBoundingBox**(`options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8665](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8665)
+Defined in: [src/class/SimpleTable.ts:8692](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8692)
 
 Adds the bounding box coordinates of geometries in a specified column as four new columns: `minLon`, `minLat`, `maxLon`, and `maxLat`.
 
@@ -2698,7 +2727,7 @@ await table.addBoundingBox({ column: "geom", decimals: 2 }).log();
 
 > **addGeoClosedStatus**(`newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:7940](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7940)
+Defined in: [src/class/SimpleTable.ts:7967](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7967)
 
 Adds a column with boolean values indicating whether geometries are closed (e.g., polygons) or open (e.g., linestrings).
 
@@ -2742,7 +2771,7 @@ await table.addGeoClosedStatus("boundaryClosed", { column: "boundaryGeom" }).log
 
 > **addGeoNoise**(`maxDistance`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8024](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8024)
+Defined in: [src/class/SimpleTable.ts:8051](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8051)
 
 Moves EPSG:4326 point geometries to random locations within a maximum great-circle distance of their original positions.
 
@@ -2806,7 +2835,7 @@ await table.addGeoNoise(0.1, {
 
 > **addGeoType**(`newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:7965](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7965)
+Defined in: [src/class/SimpleTable.ts:7992](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7992)
 
 Adds a column with the geometry type (e.g., `"POINT"`, `"LINESTRING"`, `"POLYGON"`) for each geometry.
 
@@ -2850,7 +2879,7 @@ await table.addGeoType("featureType", { column: "featureGeom" }).log();
 
 > **addGeoValidity**(`newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:7866](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7866)
+Defined in: [src/class/SimpleTable.ts:7893](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7893)
 
 Adds a column with boolean values indicating the validity of geometries.
 
@@ -2895,7 +2924,7 @@ await table.addGeoValidity("isValidMyGeom", { column: "myGeom" }).log();
 
 > **addVertexCount**(`newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:7892](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7892)
+Defined in: [src/class/SimpleTable.ts:7919](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7919)
 
 Adds a column with the number of vertices (points) in each geometry.
 
@@ -2940,7 +2969,7 @@ await table.addVertexCount("myGeomVertices", { column: "myGeom" }).log();
 
 > **aggregateGeo**(`method`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8703](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8703)
+Defined in: [src/class/SimpleTable.ts:8730](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8730)
 
 Aggregates geometries in a specified column based on a chosen aggregation method.
 
@@ -3001,7 +3030,7 @@ const intersectionTable = await table.aggregateGeo("intersection", { column: "re
 
 > **area**(`newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8121](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8121)
+Defined in: [src/class/SimpleTable.ts:8148](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8148)
 
 Computes the area of geometries in square meters (`"m2"`) or optionally square kilometers (`"km2"`).
 The input geometry is assumed to be in EPSG:4326 (WGS84).
@@ -3068,7 +3097,7 @@ await table.area("myGeomArea", { column: "myGeom" }).log();
 
 > **buffer**(`newColumn`, `distance`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8249](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8249)
+Defined in: [src/class/SimpleTable.ts:8276](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8276)
 
 Computes a buffer (a polygon representing a specified distance around a geometry) for geometries in a specified column.
 The distance is in the Spatial Reference System (SRS) unit of the input geometries.
@@ -3119,7 +3148,7 @@ await table.buffer("pointsBuffer", 10, { column: "pointsGeom" }).log();
 
 > **centroid**(`newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8524](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8524)
+Defined in: [src/class/SimpleTable.ts:8551](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8551)
 
 Computes the centroid of geometries.
 The values are returned in the SRS unit of the input geometries.
@@ -3164,7 +3193,7 @@ await table.centroid("areaCentroid", { column: "areaGeom" }).log();
 
 > **coveredBy**(`column`, `containerColumn`, `newColumn`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8433](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8433)
+Defined in: [src/class/SimpleTable.ts:8460](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8460)
 
 Returns `TRUE` if every point of a geometry in `column` is covered by a geometry in `containerColumn`, including their boundaries, and `FALSE` otherwise.
 
@@ -3205,7 +3234,7 @@ await table.coveredBy("pointGeom", "polygonGeom", "isCovered").log();
 
 > **createPoints**(`latColumn`, `lonColumn`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:7835](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7835)
+Defined in: [src/class/SimpleTable.ts:7862](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7862)
 
 Creates point geometries from latitude (y) and longitude (x) columns.
 
@@ -3263,7 +3292,7 @@ await table.createPoints("y", "x", "geom", { projection: "EPSG:3347" }).log();
 
 > **difference**(`column1`, `column2`, `newColumn`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8372](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8372)
+Defined in: [src/class/SimpleTable.ts:8399](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8399)
 
 Computes the geometric difference between two geometries, returning the portion of the first geometry that does not intersect the second.
 
@@ -3304,7 +3333,7 @@ await table.difference("geomA", "geomB", "geomA_minus_geomB").log();
 
 > **distance**(`column1`, `column2`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8606](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8606)
+Defined in: [src/class/SimpleTable.ts:8633](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8633)
 
 Computes the distance between geometries in two specified columns.
 By default, the distance is calculated in the Spatial Reference System (SRS) unit of the input geometries.
@@ -3388,7 +3417,7 @@ await table.distance("area1", "area2", "distance_spheroid_km", { method: "sphero
 
 > **extractLatLon**(`column`, `latColumn`, `lonColumn`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8472](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8472)
+Defined in: [src/class/SimpleTable.ts:8499](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8499)
 
 Extracts the latitude (y) and longitude (x) coordinates from point geometries.
 The input geometry is assumed to be in EPSG:4326 (WGS84).
@@ -3430,7 +3459,7 @@ await table.extractLatLon("geom", "lat", "lon").log();
 
 > **fillHoles**(`column?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8395](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8395)
+Defined in: [src/class/SimpleTable.ts:8422](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8422)
 
 Fills holes in polygon geometries.
 
@@ -3464,7 +3493,7 @@ await table.fillHoles("polygonGeom").log();
 
 > **fixGeo**(`column?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:7915](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7915)
+Defined in: [src/class/SimpleTable.ts:7942](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7942)
 
 Attempts to make invalid geometries valid without removing any vertices.
 
@@ -3498,7 +3527,7 @@ await table.fixGeo("myGeom").log();
 
 > **flipCoordinates**(`column?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:7989](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7989)
+Defined in: [src/class/SimpleTable.ts:8016](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8016)
 
 Flips the coordinate order of geometries in a specified column (e.g., from `[longitude (x), latitude (y)]` to `[latitude (y), longitude (x)]` or vice-versa).
 **Warning:** This method should be used with caution as it directly manipulates coordinate order and can affect the accuracy of geospatial operations if not used correctly.
@@ -3533,7 +3562,7 @@ await table.flipCoordinates("myGeom").log();
 
 > **getBoundingBox**(`column?`): `Promise`\<\[`number`, `number`, `number`, `number`\]\>
 
-Defined in: [src/class/SimpleTable.ts:8758](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8758)
+Defined in: [src/class/SimpleTable.ts:8785](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8785)
 
 Returns the bounding box of geometries in `[minLon, minLat, maxLon, maxLat]` order.
 By default, the method will try to find the column with the geometries. The input geometry is assumed to be in EPSG:4326 (WGS84).
@@ -3570,7 +3599,7 @@ console.log(areaBbox);
 
 > **getProjection**(`column`): `Promise`\<`string`\>
 
-Defined in: [src/class/SimpleTable.ts:9171](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9171)
+Defined in: [src/class/SimpleTable.ts:9198](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9198)
 
 Retrieves the projection of a specified geospatial column.
 
@@ -3599,7 +3628,7 @@ const projection = await table.getProjection("geom");
 
 > **intersection**(`column1`, `column2`, `newColumn`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8353](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8353)
+Defined in: [src/class/SimpleTable.ts:8380](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8380)
 
 Computes the intersection of two sets of geometries, creating new geometries where they overlap.
 
@@ -3640,7 +3669,7 @@ await table.intersection("geomA", "geomB", "intersectGeom").log();
 
 > **intersects**(`column1`, `column2`, `newColumn`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8414](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8414)
+Defined in: [src/class/SimpleTable.ts:8441](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8441)
 
 Returns `TRUE` if two geometries intersect (overlap in any way), and `FALSE` otherwise.
 
@@ -3681,7 +3710,7 @@ await table.intersects("geomA", "geomB", "doIntersect").log();
 
 > **joinGeo**(`rightTable`, `method`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8317](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8317)
+Defined in: [src/class/SimpleTable.ts:8344](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8344)
 
 Merges the data of this table (considered the left table) with another table (the right table) based on a spatial relationship.
 Note that the order of rows in the returned data is not guaranteed to be the same as in the original tables.
@@ -3804,7 +3833,7 @@ const tableC = await tableA.joinGeo(tableB, "intersect", {
 
 > **length**(`newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8168](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8168)
+Defined in: [src/class/SimpleTable.ts:8195](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8195)
 
 Computes the length of line geometries in meters (`"m"`) or optionally kilometers (`"km"`).
 The input geometry is assumed to be in EPSG:4326 (WGS84).
@@ -3871,7 +3900,7 @@ await table.length("routeLength", { column: "routeGeom" }).log();
 
 > **linesToPolygons**(`column?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8732](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8732)
+Defined in: [src/class/SimpleTable.ts:8759](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8759)
 
 Transforms closed linestring geometries into polygon geometries.
 
@@ -4151,7 +4180,7 @@ await table.loadOpenStreetMap(
 
 > **perimeter**(`newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8215](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8215)
+Defined in: [src/class/SimpleTable.ts:8242](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8242)
 
 Computes the perimeter of polygon geometries in meters (`"m"`) or optionally kilometers (`"km"`).
 The input geometry is assumed to be in EPSG:4326 (WGS84).
@@ -4218,7 +4247,7 @@ await table.perimeter("landParcelPerimeter", { column: "landParcelGeom" }).log()
 
 > **reducePrecision**(`decimals`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8056](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8056)
+Defined in: [src/class/SimpleTable.ts:8083](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8083)
 
 Reduces the precision of geometries in a specified column to a given number of decimal places.
 
@@ -4262,7 +4291,7 @@ await table.reducePrecision(2, { column: "myGeom" }).log();
 
 > **reproject**(`crs`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8081](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8081)
+Defined in: [src/class/SimpleTable.ts:8108](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8108)
 
 Reprojects the geometries in a specified column to another Spatial Reference System (SRS).
 
@@ -4306,7 +4335,7 @@ await table.reproject("EPSG:3347", { column: "myGeom" }).log();
 
 > **simplify**(`tolerance`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8498](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8498)
+Defined in: [src/class/SimpleTable.ts:8525](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8525)
 
 Simplifies geometries while preserving their overall coverage. A higher tolerance results in more significant simplification.
 
@@ -4356,7 +4385,7 @@ await table.simplify(0.05, { column: "myGeom", simplifyBoundary: false }).log();
 
 > **union**(`column1`, `column2`, `newColumn`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8452](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8452)
+Defined in: [src/class/SimpleTable.ts:8479](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8479)
 
 Computes the union of two geometries, creating a new geometry that represents the merged area of both.
 
@@ -4397,7 +4426,7 @@ await table.union("geomA", "geomB", "unionGeom").log();
 
 > **unnestGeo**(`column?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8638](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8638)
+Defined in: [src/class/SimpleTable.ts:8665](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8665)
 
 Unnests geometries recursively, transforming multi-part geometries (e.g., MultiPolygon) into individual single-part geometries (e.g., Polygon).
 
@@ -4433,7 +4462,7 @@ await table.unnestGeo("multiGeom").log();
 
 > **getBottom**(`count`, `options?`): `Promise`\<`object`[]\>
 
-Defined in: [src/class/SimpleTable.ts:7591](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7591)
+Defined in: [src/class/SimpleTable.ts:7618](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7618)
 
 Returns the bottom `n` rows of the table, optionally filtered by SQL conditions.
 By default, the last row will be returned first. To preserve the original order, use the `originalOrder` option.
@@ -4494,7 +4523,7 @@ console.log(bottom5Books);
 
 > **getCharacterCount**(`column`): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7065](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7065)
+Defined in: [src/class/SimpleTable.ts:7092](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7092)
 
 Returns the total number of characters in a column storing strings.
 Counts are based on Unicode code points, not grapheme clusters. A user-perceived character composed of multiple code points, such as some emoji or decomposed accented letters, counts as multiple characters.
@@ -4525,7 +4554,7 @@ console.log(totalChars); // e.g., 523
 
 > **getColumnCount**(): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7007](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7007)
+Defined in: [src/class/SimpleTable.ts:7034](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7034)
 
 Returns the number of columns in the table.
 
@@ -4547,7 +4576,7 @@ console.log(columnCount); // e.g., 3
 
 > **getColumns**(): `Promise`\<`string`[]\>
 
-Defined in: [src/class/SimpleTable.ts:6947](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6947)
+Defined in: [src/class/SimpleTable.ts:6974](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6974)
 
 Returns a list of all column names in the table.
 
@@ -4569,7 +4598,7 @@ console.log(columns); // e.g., ["id", "name", "age"]
 
 > **getData**(`options?`): `Promise`\<`object`[]\>
 
-Defined in: [src/class/SimpleTable.ts:7713](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7713)
+Defined in: [src/class/SimpleTable.ts:7740](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7740)
 
 Returns the data from the table as an array of objects, optionally filtered by SQL conditions.
 With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
@@ -4662,7 +4691,7 @@ await nested.log();
 
 > **getDataAsCSV**(`options?`): `Promise`\<`string`\>
 
-Defined in: [src/class/SimpleTable.ts:7799](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7799)
+Defined in: [src/class/SimpleTable.ts:7826](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7826)
 
 Returns the data from the table as a CSV string, optionally filtered by SQL conditions.
 With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
@@ -4717,7 +4746,7 @@ console.log(booksDataCSV);
 
 > **getDescription**(): `Promise`\<`object`[]\>
 
-Defined in: [src/class/SimpleTable.ts:6911](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6911)
+Defined in: [src/class/SimpleTable.ts:6938](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6938)
 
 Returns descriptive statistical information about the columns, including details like data types, number of null values, and distinct values.
 
@@ -4739,7 +4768,7 @@ console.table(description);
 
 > **getExtent**(`column`): `Promise`\<\[`unknown`, `unknown`\]\>
 
-Defined in: [src/class/SimpleTable.ts:7216](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7216)
+Defined in: [src/class/SimpleTable.ts:7243](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7243)
 
 Returns the extent (minimum and maximum values) of a specific column as an array.
 Temporal values use the same JavaScript representations as `getData()`.
@@ -4770,7 +4799,7 @@ console.log(tempExtent); // e.g., [15.2, 30.1]
 
 > **getFirstRow**(`options?`): `Promise`\<\{\[`key`: `string`\]: `unknown`; \} \| `null`\>
 
-Defined in: [src/class/SimpleTable.ts:7478](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7478)
+Defined in: [src/class/SimpleTable.ts:7505](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7505)
 
 Returns the first row of the table, optionally filtered by SQL conditions.
 With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
@@ -4812,7 +4841,7 @@ console.log(firstRowBooks);
 
 > **getGeoData**(`options?`): `Promise`\<\{ `features`: `unknown`[]; `type`: `string`; \}\>
 
-Defined in: [src/class/SimpleTable.ts:8794](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8794)
+Defined in: [src/class/SimpleTable.ts:8821](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8821)
 
 Returns the table's geospatial data as a GeoJSON FeatureCollection.
 Each row becomes a Feature: the selected geometry column becomes its geometry,
@@ -4867,7 +4896,7 @@ console.log(rewoundGeojson);
 
 > **getHash**(): `Promise`\<`string`\>
 
-Defined in: [src/class/SimpleTable.ts:7144](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7144)
+Defined in: [src/class/SimpleTable.ts:7171](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7171)
 
 Returns a deterministic hash of the table's ordered schema and contents.
 Pending operations are executed before the hash is calculated. Computing
@@ -4891,7 +4920,7 @@ console.log(hash); // e.g., "8f14e45fceea..."
 
 > **getLastRow**(`options?`): `Promise`\<\{\[`key`: `string`\]: `unknown`; \} \| `null`\>
 
-Defined in: [src/class/SimpleTable.ts:7511](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7511)
+Defined in: [src/class/SimpleTable.ts:7538](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7538)
 
 Returns the last row of the table, optionally filtered by SQL conditions.
 With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
@@ -4933,7 +4962,7 @@ console.log(lastRowBooks);
 
 > **getMax**(`column`): `Promise`\<`unknown`\>
 
-Defined in: [src/class/SimpleTable.ts:7198](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7198)
+Defined in: [src/class/SimpleTable.ts:7225](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7225)
 
 Returns the maximum value from a specific column.
 Temporal values use the same JavaScript representations as `getData()`.
@@ -4964,7 +4993,7 @@ console.log(maxPrice); // e.g., 99.99
 
 > **getMean**(`column`, `options?`): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7242](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7242)
+Defined in: [src/class/SimpleTable.ts:7269](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7269)
 
 Returns the mean (average) value from a specific numeric column.
 
@@ -5010,7 +5039,7 @@ console.log(meanSalary); // e.g., 55000.23
 
 > **getMedian**(`column`, `options?`): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7273](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7273)
+Defined in: [src/class/SimpleTable.ts:7300](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7300)
 
 Returns the median value from a specific numeric column.
 
@@ -5056,7 +5085,7 @@ console.log(medianSalary); // e.g., 50000.00
 
 > **getMin**(`column`): `Promise`\<`unknown`\>
 
-Defined in: [src/class/SimpleTable.ts:7180](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7180)
+Defined in: [src/class/SimpleTable.ts:7207](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7207)
 
 Returns the minimum value from a specific column.
 Temporal values use the same JavaScript representations as `getData()`.
@@ -5087,7 +5116,7 @@ console.log(minPrice); // e.g., 10.50
 
 > **getName**(): `string`
 
-Defined in: [src/class/SimpleTable.ts:6931](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6931)
+Defined in: [src/class/SimpleTable.ts:6958](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6958)
 
 Returns the name of the table.
 
@@ -5109,7 +5138,7 @@ console.log(tableName); // e.g., "employees"
 
 > **getQuantile**(`column`, `quantile`, `options?`): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7415](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7415)
+Defined in: [src/class/SimpleTable.ts:7442](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7442)
 
 Returns the value of a specific quantile from the values in a given numeric column.
 
@@ -5161,7 +5190,7 @@ console.log(ninetiethPercentile); // e.g., 88.55
 
 > **getRow**(`conditions`, `options?`): `Promise`\<\{\[`key`: `string`\]: `unknown`; \}\>
 
-Defined in: [src/class/SimpleTable.ts:7637](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7637)
+Defined in: [src/class/SimpleTable.ts:7664](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7664)
 
 Returns a single row that matches the specified conditions. Always throws if no row matches. By default, also throws if more than one row matches.
 With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
@@ -5219,7 +5248,7 @@ If no row matches, or if `strict` is `true` and more than one row matches the co
 
 > **getRowCount**(`options?`): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7091](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7091)
+Defined in: [src/class/SimpleTable.ts:7118](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7118)
 
 Returns the number of rows in the table.
 With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
@@ -5260,7 +5289,7 @@ console.log(bookCount);
 
 > **getSchema**(): `Promise`\<`object`[]\>
 
-Defined in: [src/class/SimpleTable.ts:6891](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6891)
+Defined in: [src/class/SimpleTable.ts:6918](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6918)
 
 Returns the schema of the table, including column names and their data types.
 
@@ -5282,7 +5311,7 @@ console.table(schema); // Log the schema in a readable table format
 
 > **getSkew**(`column`, `options?`): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7321](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7321)
+Defined in: [src/class/SimpleTable.ts:7348](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7348)
 
 Returns the skewness of values from a specific numeric column.
 
@@ -5328,7 +5357,7 @@ console.log(valuesSkew); // e.g., -0.25
 
 > **getStdDev**(`column`, `options?`): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7352](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7352)
+Defined in: [src/class/SimpleTable.ts:7379](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7379)
 
 Returns the standard deviation of values from a specific numeric column.
 
@@ -5374,7 +5403,7 @@ console.log(scoreStdDev); // e.g., 12.345
 
 > **getSum**(`column`): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7295](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7295)
+Defined in: [src/class/SimpleTable.ts:7322](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7322)
 
 Returns the sum of values from a specific numeric column.
 
@@ -5404,7 +5433,7 @@ console.log(totalQuantity); // e.g., 1250
 
 > **getTop**(`count`, `options?`): `Promise`\<`object`[]\>
 
-Defined in: [src/class/SimpleTable.ts:7545](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7545)
+Defined in: [src/class/SimpleTable.ts:7572](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7572)
 
 Returns the top `n` rows of the table, optionally filtered by SQL conditions.
 With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
@@ -5452,7 +5481,7 @@ console.log(top5Books);
 
 > **getTypes**(): `Promise`\<\{\[`key`: `string`\]: `string`; \}\>
 
-Defined in: [src/class/SimpleTable.ts:7124](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7124)
+Defined in: [src/class/SimpleTable.ts:7151](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7151)
 
 Returns the data types of all columns in the table.
 
@@ -5476,7 +5505,7 @@ console.log(dataTypes);
 
 > **getUniques**(`column`): `Promise`\<`unknown`[]\>
 
-Defined in: [src/class/SimpleTable.ts:7448](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7448)
+Defined in: [src/class/SimpleTable.ts:7475](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7475)
 
 Returns unique values from a column, or unique combinations from an array of columns,
 without modifying the table. Results are sorted in ascending order by the supplied
@@ -5517,7 +5546,7 @@ console.log(uniqueYears); // e.g., [{ yearStart: 2020, yearEnd: 2021 }, { yearSt
 
 > **getUniques**(`column`): `Promise`\<`object`[]\>
 
-Defined in: [src/class/SimpleTable.ts:7449](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7449)
+Defined in: [src/class/SimpleTable.ts:7476](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7476)
 
 Returns unique values from a column, or unique combinations from an array of columns,
 without modifying the table. Results are sorted in ascending order by the supplied
@@ -5558,7 +5587,7 @@ console.log(uniqueYears); // e.g., [{ yearStart: 2020, yearEnd: 2021 }, { yearSt
 
 > **getUniques**(`column`): `Promise`\<`unknown`[]\>
 
-Defined in: [src/class/SimpleTable.ts:7450](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7450)
+Defined in: [src/class/SimpleTable.ts:7477](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7477)
 
 Returns unique values from a column, or unique combinations from an array of columns,
 without modifying the table. Results are sorted in ascending order by the supplied
@@ -5599,7 +5628,7 @@ console.log(uniqueYears); // e.g., [{ yearStart: 2020, yearEnd: 2021 }, { yearSt
 
 > **getValueCount**(): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7107](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7107)
+Defined in: [src/class/SimpleTable.ts:7134](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7134)
 
 Returns the total number of values in the table (number of columns multiplied by the number of rows).
 
@@ -5621,7 +5650,7 @@ console.log(valueCount); // e.g., 300 (if 3 columns and 100 rows)
 
 > **getValues**(`column`): `Promise`\<`unknown`[]\>
 
-Defined in: [src/class/SimpleTable.ts:7162](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7162)
+Defined in: [src/class/SimpleTable.ts:7189](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7189)
 
 Returns all values from a specific column.
 Temporal values use the same JavaScript representations as `getData()`.
@@ -5652,7 +5681,7 @@ console.log(productNames); // e.g., ["Laptop", "Mouse", "Keyboard"]
 
 > **getVariance**(`column`, `options?`): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7383](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7383)
+Defined in: [src/class/SimpleTable.ts:7410](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7410)
 
 Returns the variance of values from a specific numeric column.
 
@@ -5698,7 +5727,7 @@ console.log(valuesVariance); // e.g., 10.23
 
 > **stream**(`options?`): `AsyncGenerator`\<\{\[`key`: `string`\]: `unknown`; \}, `void`, `undefined`\>
 
-Defined in: [src/class/SimpleTable.ts:7758](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7758)
+Defined in: [src/class/SimpleTable.ts:7785](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7785)
 
 Streams the table rows one by one as an async iterator, without
 materializing the whole table in memory. Values are converted to
@@ -8685,7 +8714,7 @@ If Yahoo rejects the request or returns no data.
 
 > **log**(`options?`): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:9096](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9096)
+Defined in: [src/class/SimpleTable.ts:9123](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9123)
 
 Logs up to a specified number of rows from the table to the console. By default, the first 10 rows are logged.
 You can optionally log the column types and filter the data based on conditions.
@@ -8779,7 +8808,7 @@ await table.log({ conditions: `status === 'active'` });
 
 > **logBottom**(`count?`, `options?`): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:9399](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9399)
+Defined in: [src/class/SimpleTable.ts:9426](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9426)
 
 Logs the bottom `n` rows of the table to the console. By default, the last row will be returned first. To preserve the original order, use the `originalOrder` option.
 
@@ -8832,7 +8861,7 @@ await table.logBottom(5, { originalOrder: true });
 
 > **logColumns**(`options?`): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:9341](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9341)
+Defined in: [src/class/SimpleTable.ts:9368](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9368)
 
 Logs the columns in the table to the console. You can optionally include their data types.
 
@@ -8870,7 +8899,7 @@ await table.logColumns({ types: true });
 
 > **logDescription**(): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:9148](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9148)
+Defined in: [src/class/SimpleTable.ts:9175](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9175)
 
 Logs descriptive information about the columns in the table to the console. This includes details such as data types, number of null values, and number of distinct values for each column.
 It internally calls the `getDescription` method to retrieve the descriptive statistics.
@@ -8892,7 +8921,7 @@ await table.logDescription();
 
 > **logExtent**(`column`): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:9416](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9416)
+Defined in: [src/class/SimpleTable.ts:9443](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9443)
 
 Logs the extent (minimum and maximum values) of a numeric column to the console.
 
@@ -8921,7 +8950,7 @@ await table.logExtent("price");
 
 > **logProjections**(): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:9196](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9196)
+Defined in: [src/class/SimpleTable.ts:9223](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9223)
 
 Logs the projections of the geospatial data (if any) to the console.
 
@@ -8942,7 +8971,7 @@ await table.logProjections();
 
 > **logRowCount**(): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:9363](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9363)
+Defined in: [src/class/SimpleTable.ts:9390](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9390)
 
 Logs the total number of rows in the table to the console.
 
@@ -8963,7 +8992,7 @@ await table.logRowCount();
 
 > **logTypes**(): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:9226](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9226)
+Defined in: [src/class/SimpleTable.ts:9253](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9253)
 
 Logs the types of all columns in the table to the console.
 
@@ -8986,7 +9015,7 @@ await table.logTypes();
 
 > **logUniques**(`column`, `options?`): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:9255](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9255)
+Defined in: [src/class/SimpleTable.ts:9282](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9282)
 
 Logs a column's sorted unique values as an array without modifying the table.
 If your terminal's runtime truncates the array, use `stringify` to see every value.
@@ -9033,7 +9062,7 @@ await table.logUniques("name", { stringify: true });
 
 > **logUniques**(`column`, `options?`): `Promise`\<[`SimpleTable`](#simpletable)\>
 
-Defined in: [src/class/SimpleTable.ts:9295](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9295)
+Defined in: [src/class/SimpleTable.ts:9322](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L9322)
 
 Logs unique combinations as a table without modifying the source table.
 Combinations are sorted in ascending order by the columns in the order provided.
@@ -9307,7 +9336,7 @@ A flag indicating whether to include data types when logging a table.
 
 > **randomPoint**(`newColumn`, `tries`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8555](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8555)
+Defined in: [src/class/SimpleTable.ts:8582](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L8582)
 
 Generates a random point within the geometries of a specified column.
 
@@ -10520,7 +10549,7 @@ await tableA.join(tableB, { on: ["name", "category"] }).log();
 
 > **addCharacterCount**(`column`, `newColumn`): `this`
 
-Defined in: [src/class/SimpleTable.ts:7027](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7027)
+Defined in: [src/class/SimpleTable.ts:7054](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7054)
 
 Adds a new column containing the number of characters in each string in the specified column.
 Counts are based on Unicode code points, not grapheme clusters. A user-perceived character composed of multiple code points, such as some emoji or decomposed accented letters, counts as multiple characters.
@@ -10557,7 +10586,7 @@ await table.addCharacterCount("name", "nameCharacterCount").log();
 
 > **addWordCount**(`column`, `newColumn`): `this`
 
-Defined in: [src/class/SimpleTable.ts:7046](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7046)
+Defined in: [src/class/SimpleTable.ts:7073](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7073)
 
 Adds a new column containing the word count for each string in the specified column.
 A word is any contiguous sequence of non-whitespace characters. Spaces, tabs, and line breaks separate words. Punctuation is not removed, so a standalone punctuation sequence counts as a word. Text without whitespace counts as one word, regardless of language. Empty or whitespace-only strings produce `0`, and `NULL` input values produce `NULL` counts.
@@ -10593,7 +10622,7 @@ await table.addWordCount("article", "wordCount").log();
 
 > **normalizeString**(`column`, `newColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6986](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6986)
+Defined in: [src/class/SimpleTable.ts:7013](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7013)
 
 Normalizes string values in a column by:
 1. Stripping accents
@@ -12323,7 +12352,7 @@ await table.loadArray([{ count: 0, details: { count: 3 } }], {
 
 > **updateWithJS**(`dataModifier`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6852](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6852)
+Defined in: [src/class/SimpleTable.ts:6879](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6879)
 
 Updates data in the table using a JavaScript function. The function receives the existing rows as an array of objects and must return the modified rows as an array of objects.
 This method offers high flexibility for data manipulation but can be slow for large tables as it involves transferring data between DuckDB and JavaScript.
@@ -12970,7 +12999,7 @@ console.log(error.method, error.cause);
 
 > `optional` **cause?**: `unknown`
 
-Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
+Defined in: [../../../Users/nael/Code/open-source/simple-data-analysis-core/node\_modules/typescript/lib/lib.es2022.error.d.ts:24](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/../../../Users/nael/Code/open-source/simple-data-analysis-core/node_modules/typescript/lib/lib.es2022.error.d.ts#L24)
 
 ###### Inherited from
 
@@ -12980,7 +13009,7 @@ Defined in: node\_modules/typescript/lib/lib.es2022.error.d.ts:24
 
 > **message**: `string`
 
-Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1075
+Defined in: [../../../Users/nael/Code/open-source/simple-data-analysis-core/node\_modules/typescript/lib/lib.es5.d.ts:1075](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/../../../Users/nael/Code/open-source/simple-data-analysis-core/node_modules/typescript/lib/lib.es5.d.ts#L1075)
 
 ###### Inherited from
 
@@ -12998,7 +13027,7 @@ The SDA method that triggered the failing query.
 
 > **name**: `string`
 
-Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1074
+Defined in: [../../../Users/nael/Code/open-source/simple-data-analysis-core/node\_modules/typescript/lib/lib.es5.d.ts:1074](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/../../../Users/nael/Code/open-source/simple-data-analysis-core/node_modules/typescript/lib/lib.es5.d.ts#L1074)
 
 ###### Inherited from
 
@@ -13024,7 +13053,7 @@ The SQL query that failed.
 
 > `optional` **stack?**: `string`
 
-Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1076
+Defined in: [../../../Users/nael/Code/open-source/simple-data-analysis-core/node\_modules/typescript/lib/lib.es5.d.ts:1076](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/../../../Users/nael/Code/open-source/simple-data-analysis-core/node_modules/typescript/lib/lib.es5.d.ts#L1076)
 
 ###### Inherited from
 
@@ -13034,7 +13063,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1076
 
 > `static` **stackTraceLimit**: `number`
 
-Defined in: node\_modules/@types/node/globals.d.ts:68
+Defined in: [../../../Users/nael/Code/open-source/simple-data-analysis-core/node\_modules/@types/node/globals.d.ts:68](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/../../../Users/nael/Code/open-source/simple-data-analysis-core/node_modules/@types/node/globals.d.ts#L68)
 
 The `Error.stackTraceLimit` property specifies the number of stack frames
 collected by a stack trace (whether generated by `new Error().stack` or
@@ -13056,7 +13085,7 @@ not capture any frames.
 
 > `static` **captureStackTrace**(`targetObject`, `constructorOpt?`): `void`
 
-Defined in: node\_modules/@types/node/globals.d.ts:52
+Defined in: [../../../Users/nael/Code/open-source/simple-data-analysis-core/node\_modules/@types/node/globals.d.ts:52](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/../../../Users/nael/Code/open-source/simple-data-analysis-core/node_modules/@types/node/globals.d.ts#L52)
 
 Creates a `.stack` property on `targetObject`, which when accessed returns
 a string representing the location in the code at which
@@ -13124,7 +13153,7 @@ a();
 
 > `static` **prepareStackTrace**(`err`, `stackTraces`): `any`
 
-Defined in: node\_modules/@types/node/globals.d.ts:56
+Defined in: [../../../Users/nael/Code/open-source/simple-data-analysis-core/node\_modules/@types/node/globals.d.ts:56](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/../../../Users/nael/Code/open-source/simple-data-analysis-core/node_modules/@types/node/globals.d.ts#L56)
 
 ###### Parameters
 
