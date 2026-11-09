@@ -2103,14 +2103,29 @@ export default class SimpleTable extends Simple {
    * ```
    *
    * @example
+   * Keep the highest-spending year or tied years in each division.
+   *
+   * **Input**
+   *
+   * | division | year | spending |
+   * | --- | ---: | ---: |
+   * | Parks | 2022 | 120 |
+   * | Parks | 2023 | 120 |
+   * | Parks | 2024 | 95 |
+   * | Transit | 2024 | 85 |
+   *
    * ```ts
-   * // Keep the highest-spending year or tied years in each division.
-   * await table
-   *   .summarize({ columns: "amount", by: ["division", "year"], stats: { spending: "sum" } })
-   *   .keepValuesStat("spending", "max", { by: "division" })
-   *   .sort({ year: "desc" })
-   *   .log();
+   * await table.keepValuesStat("spending", "max", { by: "division" }).log();
    * ```
+   *
+   * **Rows kept** (order may vary)
+   *
+   * | division | year | spending |
+   * | --- | ---: | ---: |
+   * | Parks | 2022 | 120 |
+   * | Parks | 2023 | 120 |
+   * | Transit | 2024 | 85 |
+   *
    * @param column - The column whose values are compared with the statistic.
    * @param stat - Use `"min"` to keep the lowest values or `"max"` to keep the highest values.
    * @param options - Optional configuration for grouping rows.
