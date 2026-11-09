@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.21**](../../index.md)
+[**Simple Data Analysis Core v2.1.22**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **correlations**(`options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6519](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6519)
+Defined in: [src/class/SimpleTable.ts:6651](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L6651)
 
 Calculates correlations between columns. If no `x` and `y` columns are specified, the method computes the correlations for all numeric column combinations.
 Note that correlation is symmetrical: the correlation of `x` with `y` is the same as `y` with `x`.

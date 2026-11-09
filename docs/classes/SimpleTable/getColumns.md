@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.21**](../../index.md)
+[**Simple Data Analysis Core v2.1.22**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **getColumns**(): `Promise`\<`string`[]\>
 
-Defined in: [src/class/SimpleTable.ts:6974](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6974)
+Defined in: [src/class/SimpleTable.ts:7106](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L7106)
 
 Returns a list of all column names in the table.
 

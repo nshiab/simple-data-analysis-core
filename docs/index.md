@@ -1,4 +1,4 @@
-**Simple Data Analysis Core v2.1.21**
+**Simple Data Analysis Core v2.1.22**
 
 ***
 

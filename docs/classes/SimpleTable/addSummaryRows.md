@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.21**](../../index.md)
+[**Simple Data Analysis Core v2.1.22**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **addSummaryRows**(`columns`, `labelColumn`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6315](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6315)
+Defined in: [src/class/SimpleTable.ts:6446](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L6446)
 
 Adds one or more summary rows to the table. Each row is calculated from
 the original rows before any summary rows are added. This is useful for
@@ -37,6 +37,12 @@ The existing string column in which stat row labels will be written.
 
 An optional object with configuration options:
 
+#### decimals?
+
+`number`
+
+A nonnegative integer giving the number of decimal places to round to. Rounding applies only to summary rows and skips counts. Defaults to no rounding.
+
 #### position?
 
 `"top"` \| `"bottom"`
@@ -45,7 +51,7 @@ Whether to add the summary rows at the `"top"` or `"bottom"` of the table. Defau
 
 #### stats?
 
-`"countDistinct"` \| `"countNull"` \| `"min"` \| `"max"` \| `"mean"` \| `"median"` \| `"sum"` \| `"skew"` \| `"stdDev"` \| `"variance"` \| \{ `label?`: `string`; `stat`: `"countDistinct"` \| `"countNull"` \| `"min"` \| `"max"` \| `"mean"` \| `"median"` \| `"sum"` \| `"skew"` \| `"stdDev"` \| `"variance"`; \} \| (`"countDistinct"` \| `"countNull"` \| `"min"` \| `"max"` \| `"mean"` \| `"median"` \| `"sum"` \| `"skew"` \| `"stdDev"` \| `"variance"` \| \{ `label?`: `string`; `stat`: `"countDistinct"` \| `"countNull"` \| `"min"` \| `"max"` \| `"mean"` \| `"median"` \| `"sum"` \| `"skew"` \| `"stdDev"` \| `"variance"`; \})[]
+`"min"` \| `"max"` \| `"countDistinct"` \| `"countNull"` \| `"mean"` \| `"median"` \| `"sum"` \| `"skew"` \| `"stdDev"` \| `"variance"` \| \{ `label?`: `string`; `stat`: `"min"` \| `"max"` \| `"countDistinct"` \| `"countNull"` \| `"mean"` \| `"median"` \| `"sum"` \| `"skew"` \| `"stdDev"` \| `"variance"`; \} \| (`"min"` \| `"max"` \| `"countDistinct"` \| `"countNull"` \| `"mean"` \| `"median"` \| `"sum"` \| `"skew"` \| `"stdDev"` \| `"variance"` \| \{ `label?`: `string`; `stat`: `"min"` \| `"max"` \| `"countDistinct"` \| `"countNull"` \| `"mean"` \| `"median"` \| `"sum"` \| `"skew"` \| `"stdDev"` \| `"variance"`; \})[]
 
 A stat, stat configuration, or array of either. Supported stats are `"countDistinct"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, and `"variance"`. An object's `label` defaults to its `stat`. If omitted, all supported stats are added.
 
@@ -78,4 +84,9 @@ await table.addSummaryRows("all", "region", {
     { stat: "mean", label: "Average" },
   ],
 }).log();
+```
+
+```ts
+// Round the total and average in the summary rows to two decimal places.
+await table.addSummaryRows("sales", "region", { stats: ["sum", "mean"], decimals: 2 }).log();
 ```

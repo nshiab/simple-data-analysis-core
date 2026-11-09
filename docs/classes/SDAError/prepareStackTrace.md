@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.21**](../../index.md)
+[**Simple Data Analysis Core v2.1.22**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > `static` **prepareStackTrace**(`err`, `stackTraces`): `any`
 
-Defined in: [../../../Users/nael/Code/open-source/simple-data-analysis-core/node\_modules/@types/node/globals.d.ts:56](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/../../../Users/nael/Code/open-source/simple-data-analysis-core/node_modules/@types/node/globals.d.ts#L56)
+Defined in: node\_modules/@types/node/globals.d.ts:56
 
 ## Parameters
 

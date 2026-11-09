@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.21**](../../index.md)
+[**Simple Data Analysis Core v2.1.22**](../../index.md)
 
 ***
 
@@ -6,9 +6,9 @@
 
 # Method: getMin()
 
-> **getMin**(`column`): `Promise`\<`unknown`\>
+> **getMin**(`column`, `options?`): `Promise`\<`unknown`\>
 
-Defined in: [src/class/SimpleTable.ts:7207](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L7207)
+Defined in: [src/class/SimpleTable.ts:7338](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L7338)
 
 Returns the minimum value from a specific column.
 Temporal values use the same JavaScript representations as `getData()`.
@@ -21,6 +21,14 @@ Temporal values use the same JavaScript representations as `getData()`.
 
 The name of the column from which to retrieve the minimum value.
 
+### options?
+
+#### decimals?
+
+`number`
+
+Nonnegative decimal places for the numeric minimum. Defaults to no rounding.
+
 ## Returns
 
 `Promise`\<`unknown`\>
@@ -30,7 +38,5 @@ A promise that resolves to the minimum value of the specified column.
 ## Example
 
 ```ts
-// Get the minimum value from the 'price' column
-const minPrice = await table.getMin("price");
-console.log(minPrice); // e.g., 10.50
+console.log(await table.getMin("price", { decimals: 2 }));
 ```

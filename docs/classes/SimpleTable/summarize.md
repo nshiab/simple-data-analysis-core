@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.21**](../../index.md)
+[**Simple Data Analysis Core v2.1.22**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **summarize**(`options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:6218](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.21/src/class/SimpleTable.ts#L6218)
+Defined in: [src/class/SimpleTable.ts:6342](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L6342)
 
 Creates a summary table from selected columns, optionally grouped by other columns.
 This method allows you to aggregate data, calculate statistics (e.g., count,
@@ -60,7 +60,7 @@ If `true`, the results will be stored in a new table with a generated name. If a
 
 #### stats?
 
-`"count"` \| `"countDistinct"` \| `"countNull"` \| `"min"` \| `"max"` \| `"mean"` \| `"median"` \| `"sum"` \| `"skew"` \| `"stdDev"` \| `"variance"` \| (`"count"` \| `"countDistinct"` \| `"countNull"` \| `"min"` \| `"max"` \| `"mean"` \| `"median"` \| `"sum"` \| `"skew"` \| `"stdDev"` \| `"variance"`)[] \| \{\[`key`: `string`\]: `"count"` \| `"countDistinct"` \| `"countNull"` \| `"min"` \| `"max"` \| `"mean"` \| `"median"` \| `"sum"` \| `"skew"` \| `"stdDev"` \| `"variance"`; \}
+`"min"` \| `"max"` \| `"count"` \| `"countDistinct"` \| `"countNull"` \| `"mean"` \| `"median"` \| `"sum"` \| `"skew"` \| `"stdDev"` \| `"variance"` \| (`"min"` \| `"max"` \| `"count"` \| `"countDistinct"` \| `"countNull"` \| `"mean"` \| `"median"` \| `"sum"` \| `"skew"` \| `"stdDev"` \| `"variance"`)[] \| \{\[`key`: `string`\]: `"min"` \| `"max"` \| `"count"` \| `"countDistinct"` \| `"countNull"` \| `"mean"` \| `"median"` \| `"sum"` \| `"skew"` \| `"stdDev"` \| `"variance"`; \}
 
 The statistics to compute. Can be a single statistic (e.g., `"mean"`), an array (e.g., `["min", "max"]`), or an object mapping output column names to statistics (e.g., `{ avgSalary: "mean" }`). Supported statistics are `"count"`, `"countDistinct"`, `"countNull"`, `"min"`, `"max"`, `"mean"`, `"median"`, `"sum"`, `"skew"`, `"stdDev"`, and `"variance"`.
 
