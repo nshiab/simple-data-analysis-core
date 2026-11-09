@@ -1,3 +1,4 @@
+import roundExpression, { validateDecimals } from "./roundExpression.ts";
 import type { DuckDBValue } from "@duckdb/node-api";
 import type SimpleTable from "../class/SimpleTable.ts";
 import type { TableSchema } from "./pendingOps.ts";
@@ -6,6 +7,8 @@ import quoteIdentifier from "./quoteIdentifier.ts";
 import resolveOutputTable from "./resolveOutputTable.ts";
 
 type GraphResult = {
+  decimals?: number;
+  roundedColumns?: string[];
   buildSelect: (input: string, schema: TableSchema) => string;
   method: string;
   outputSchema: (schema: TableSchema) => TableSchema;
@@ -20,6 +23,7 @@ export default function queueGraphResult(
   simpleTable: SimpleTable,
   result: GraphResult,
 ): SimpleTable {
+  validateDecimals(result.decimals);
   const resolvedOutput = resolveOutputTable(simpleTable, result.outputTable);
   const outputTable =
     typeof resolvedOutput === "string" ? simpleTable.sdb.newTable(resolvedOutput) : simpleTable;
@@ -51,8 +55,17 @@ export default function queueGraphResult(
     parameters: result.parameters,
     needsSchema: true,
     values: result.values,
-    buildSelect: result.buildSelect,
-    outputSchema: result.outputSchema,
+    buildSelect: (input, schema) => {
+      const select = result.buildSelect(input, schema);
+      if (result.decimals === undefined || !result.roundedColumns?.length) return select;
+      const outputSchema = result.outputSchema(schema);
+      const replacements = result.roundedColumns.map(
+        (column) =>
+          `${roundExpression(quoteIdentifier(column), result.decimals, outputSchema[column])} AS ${quoteIdentifier(column)}`,
+      );
+      return `SELECT * REPLACE (${replacements.join(", ")}) FROM (${select})`;
+    },
+    outputSchema: result.decimals === undefined ? result.outputSchema : undefined,
   });
   return outputTable;
 }

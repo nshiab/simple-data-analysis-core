@@ -2667,3 +2667,27 @@ test("distances reports cost overflow only for primary-optimal summaries", async
     await sdb.close();
   }
 });
+
+test("distances rounds selected total costs without introducing ties or rounding step counts", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable().loadArray([
+      { source: "A", target: "C", cost: 0.264 },
+      { source: "C", target: "B", cost: 0.264 },
+      { source: "A", target: "B", cost: 0.529 },
+    ]);
+    const rows = await table
+      .distances("source", "target", "A", { weight: "cost", decimals: 2, outputTable: true })
+      .getData();
+    expect(rows.filter((row) => row.node === "B")).toEqual([
+      { start: "A", node: "B", steps: 2, total: 0.53 },
+    ]);
+    expect(rows.find((row) => row.node === "C")?.total).toBe(0.26);
+    expect(await table.distances("source", "target", "A", { decimals: 0 }).getData()).toEqual([
+      { start: "A", node: "B", steps: 1 },
+      { start: "A", node: "C", steps: 1 },
+    ]);
+  } finally {
+    await sdb.close();
+  }
+});

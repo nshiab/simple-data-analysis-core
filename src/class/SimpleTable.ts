@@ -1,3 +1,4 @@
+import getExtent from "../methods/getExtent.ts";
 import umap from "../methods/umap.ts";
 import hdbscan from "../methods/hdbscan.ts";
 import logBottom from "../methods/logBottom.ts";
@@ -2342,10 +2343,15 @@ export default class SimpleTable extends Simple {
    *
    * When multiple rows share the same `namesFrom`/grouping combination, their `valuesFrom` values are combined with the `options.stat` function (`"sum"` by default).
    *
+   * @example
+   * ```ts
+   * await table.wider("year", "sales", { stat: "mean", decimals: 2 }).log();
+   * ```
    * @param namesFrom - The name of the column containing the values that will be transformed into new column headers (e.g., "Year").
    * @param valuesFrom - The name of the column containing the values to be spread across the new columns (e.g., "Employees").
    * @param options - An optional object with configuration options:
    * @param options.stat - The stat function applied when multiple rows share the same `namesFrom`/grouping combination: `"sum"`, `"count"`, `"min"`, `"max"`, `"mean"`, `"median"`, or `"first"`. Defaults to `"sum"`.
+   * @param options.decimals - Nonnegative decimal places for numeric pivot values. Defaults to no rounding.
    * @returns The table, so methods can be chained.
    * @category Restructuring Data
    */
@@ -2353,6 +2359,7 @@ export default class SimpleTable extends Simple {
     namesFrom: string,
     valuesFrom: string,
     options: {
+      decimals?: number;
       stat?: "sum" | "count" | "min" | "max" | "mean" | "median" | "first";
     } = {},
   ): this {
@@ -2803,12 +2810,17 @@ export default class SimpleTable extends Simple {
    * | A | 1 | 2 | 3 |
    * | B | 1 | 0 | 1 |
    *
+   * @example
+   * ```ts
+   * await table.degree("from", "to", { weight: "cost", decimals: 2 }).log();
+   * ```
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param options - An optional object with counting and result configuration.
    * @param options.count - Whether to count connection rows (`"edges"`) or distinct adjacent nodes (`"neighbors"`). Defaults to `"edges"`.
    * @param options.weight - The name of the numeric edge-weight column to sum. This requires edge counting.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
+   * @param options.decimals - Nonnegative decimal places for each weighted sum. Defaults to no rounding.
    * @returns The result table, so methods can be chained.
    * @category Graph Operations
    */
@@ -2816,6 +2828,7 @@ export default class SimpleTable extends Simple {
     sourceColumn: string,
     targetColumn: string,
     options: {
+      decimals?: number;
       count?: "edges" | "neighbors";
       weight?: string;
       outputTable?: string | boolean;
@@ -3613,6 +3626,10 @@ export default class SimpleTable extends Simple {
    * | A | C | 2 | 50 |
    * | A | C | 2 | 80 |
    *
+   * @example
+   * ```ts
+   * await table.distances("from", "to", "A", { weight: "cost", decimals: 2 }).log();
+   * ```
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param startNodes - One starting node ID or a non-empty array of distinct IDs. Unknown IDs and starts with no connections to follow produce no rows. Empty arrays and duplicate IDs throw an error.
@@ -3626,6 +3643,7 @@ export default class SimpleTable extends Simple {
    * @param options.elapsedTime - Whether to add cumulative `elapsedTimeMs` in milliseconds, including connection gaps. Defaults to `false`. Requires both time columns. Optimization compares native timestamp precision before conversion to milliseconds.
    * @param options.minimize - The metric used to select optimal routes: `"steps"`, `"weight"`, or `"elapsedTime"`. Defaults to `"weight"` when only `weight` is enabled, `"elapsedTime"` when only elapsed-time reporting is enabled, and `"steps"` when neither is enabled. Required when both are enabled. `"steps"` is always available; the other metrics require their corresponding options.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
+   * @param options.decimals - Nonnegative decimal places for total weights. Defaults to no rounding.
    * @returns The table of distinct optimal summaries with `start`, `node`, and `steps`, plus `total` when `weight` is supplied and `elapsedTimeMs` when enabled, so methods can be chained. Sorted by start, the chosen metric, node, then remaining metrics in the order steps, total, elapsed time.
    * @category Graph Operations
    */
@@ -3634,6 +3652,7 @@ export default class SimpleTable extends Simple {
     targetColumn: string,
     startNodes: string | number | bigint | (string | number | bigint)[],
     options: {
+      decimals?: number;
       direction?: "outgoing" | "incoming" | "both";
       elapsedTime?: boolean;
       endTimeColumn?: string;
@@ -3928,6 +3947,10 @@ export default class SimpleTable extends Simple {
    * | ---: | ---: | ---: | ---: | ---: | --- | --- | --- | --- | --- | ---: |
    * | 0 | 1 | 120 | 120 | 10800000 | F3 | A | C | 2025-01-01 09:00:00 | 2025-01-01 12:00:00 | 120 |
    *
+   * @example
+   * ```ts
+   * await table.shortestPath("from", "to", "id", "A", "B", { weight: "cost", decimals: 2 }).log();
+   * ```
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param edgeId - The name of the column uniquely identifying each connection (edge).
@@ -3943,6 +3966,7 @@ export default class SimpleTable extends Simple {
    * @param options.elapsedTime - Whether to add cumulative `elapsedTimeMs` in milliseconds, including connection gaps. Defaults to `false`. Requires both time columns.
    * @param options.minimize - The metric used to select optimal routes: `"steps"`, `"weight"`, or `"elapsedTime"`. Defaults to `"weight"` when only `weight` is enabled, `"elapsedTime"` when only elapsed-time reporting is enabled, and `"steps"` when neither is enabled. Required when both are enabled. `"steps"` is always available; the other metrics require their corresponding options.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
+   * @param options.decimals - Nonnegative decimal places for cumulative weights. Defaults to no rounding.
    * @returns The table of route connections with optional cumulative `total` and `elapsedTimeMs` metrics, so methods can be chained.
    * @category Graph Operations
    */
@@ -3953,6 +3977,7 @@ export default class SimpleTable extends Simple {
     start: string | number | bigint,
     end: string | number | bigint,
     options: {
+      decimals?: number;
       direction?: "outgoing" | "incoming" | "both";
       elapsedTime?: boolean;
       endTimeColumn?: string;
@@ -4226,6 +4251,10 @@ export default class SimpleTable extends Simple {
    * | 0 | 2 | 40 | 80 | 14400000 | F2 | B | C | 2025-01-01 12:00:00 | 2025-01-01 13:00:00 | 40 |
    * | 1 | 1 | 120 | 120 | 10800000 | F3 | A | C | 2025-01-01 09:00:00 | 2025-01-01 12:00:00 | 120 |
    *
+   * @example
+   * ```ts
+   * await table.paths("from", "to", "id", "A", "B", { weight: "cost", decimals: 2 }).log();
+   * ```
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param edgeId - The name of the column uniquely identifying each connection (edge).
@@ -4240,6 +4269,7 @@ export default class SimpleTable extends Simple {
    * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
    * @param options.elapsedTime - Whether to add cumulative `elapsedTimeMs` in milliseconds, including connection gaps. Defaults to `false`. Requires both time columns.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
+   * @param options.decimals - Nonnegative decimal places for cumulative weights. Defaults to no rounding.
    * @returns The result table, so methods can be chained.
    * @category Graph Operations
    */
@@ -4250,6 +4280,7 @@ export default class SimpleTable extends Simple {
     start: string | number | bigint,
     end: string | number | bigint,
     options: {
+      decimals?: number;
       direction?: "outgoing" | "incoming" | "both";
       elapsedTime?: boolean;
       endTimeColumn?: string;
@@ -4561,6 +4592,10 @@ export default class SimpleTable extends Simple {
    * | A | 0 | 1 | 40 | 40 | 3600000 | F1 | A | B | 2025-01-01 09:00:00 | 2025-01-01 10:00:00 | 40 |
    * | A | 0 | 2 | 60 | 100 | 14400000 | F2 | B | A | 2025-01-01 12:00:00 | 2025-01-01 13:00:00 | 60 |
    *
+   * @example
+   * ```ts
+   * await table.findCycles("from", "to", "id", "A", { weight: "cost", decimals: 2 }).log();
+   * ```
    * @param sourceColumn - The name of the column containing each connection's source node ID.
    * @param targetColumn - The name of the column containing each connection's target node ID.
    * @param edgeId - The name of the column uniquely identifying each connection (edge).
@@ -4574,6 +4609,7 @@ export default class SimpleTable extends Simple {
    * @param options.weight - The name of the numeric column used as the cost of each connection. If omitted, each connection costs one.
    * @param options.elapsedTime - Whether to add cumulative `elapsedTimeMs` in milliseconds, including connection gaps. Defaults to `false`. Requires both time columns.
    * @param options.outputTable - If `true`, stores the result in a new table with a generated name. If a string, uses it as the new table's name. If `false` or omitted, overwrites the current table. Defaults to `false`.
+   * @param options.decimals - Nonnegative decimal places for cumulative weights. Defaults to no rounding.
    * @returns The result table, so methods can be chained.
    * @category Graph Operations
    */
@@ -4583,6 +4619,7 @@ export default class SimpleTable extends Simple {
     edgeId: string,
     startNodes: string | number | bigint | (string | number | bigint)[],
     options: {
+      decimals?: number;
       direction?: "outgoing" | "incoming" | "both";
       elapsedTime?: boolean;
       endTimeColumn?: string;
@@ -7225,16 +7262,15 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Get the minimum value from the 'price' column
-   * const minPrice = await table.getMin("price");
-   * console.log(minPrice); // e.g., 10.50
+   * console.log(await table.getMin("price", { decimals: 2 }));
    * ```
    * @param column - The name of the column from which to retrieve the minimum value.
+   * @param options.decimals - Nonnegative decimal places for the numeric minimum. Defaults to no rounding.
    * @returns A promise that resolves to the minimum value of the specified column.
    * @category Getting Data
    */
-  async getMin(column: string): Promise<unknown> {
-    return await getMin(this, column);
+  async getMin(column: string, options: { decimals?: number } = {}): Promise<unknown> {
+    return await getMin(this, column, options);
   }
 
   /**
@@ -7243,16 +7279,15 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Get the maximum value from the 'price' column
-   * const maxPrice = await table.getMax("price");
-   * console.log(maxPrice); // e.g., 99.99
+   * console.log(await table.getMax("price", { decimals: 2 }));
    * ```
    * @param column - The name of the column from which to retrieve the maximum value.
+   * @param options.decimals - Nonnegative decimal places for the numeric maximum. Defaults to no rounding.
    * @returns A promise that resolves to the maximum value of the specified column.
    * @category Getting Data
    */
-  async getMax(column: string): Promise<unknown> {
-    return await getMax(this, column);
+  async getMax(column: string, options: { decimals?: number } = {}): Promise<unknown> {
+    return await getMax(this, column, options);
   }
 
   /**
@@ -7261,16 +7296,18 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Get the extent of the 'temperature' column
-   * const tempExtent = await table.getExtent("temperature");
-   * console.log(tempExtent); // e.g., [15.2, 30.1]
+   * console.log(await table.getExtent("price", { decimals: 2 }));
    * ```
    * @param column - The name of the column from which to retrieve the extent.
+   * @param options.decimals - Nonnegative decimal places for the numeric bounds. Defaults to no rounding.
    * @returns A promise that resolves to an array `[min, max]` containing the minimum and maximum values of the specified column.
    * @category Getting Data
    */
-  async getExtent(column: string): Promise<[unknown, unknown]> {
-    return [await this.getMin(column), await this.getMax(column)];
+  async getExtent(
+    column: string,
+    options: { decimals?: number } = {},
+  ): Promise<[unknown, unknown]> {
+    return await getExtent(this, column, options);
   }
 
   /**
@@ -8803,16 +8840,19 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Get the bounding box of geometries in a specific column named 'areaGeom'
-   * const areaBbox = await table.getBoundingBox("areaGeom");
+   * const areaBbox = await table.getBoundingBox("areaGeom", { decimals: 2 });
    * console.log(areaBbox);
    * ```
    * @param column - The name of the column storing geometries. If omitted, the method will automatically attempt to find a geometry column.
+   * @param options.decimals - Nonnegative decimal places for the coordinates. Defaults to no rounding.
    * @returns A promise that resolves to an array `[minLon, minLat, maxLon, maxLat]` representing the bounding box.
    * @category Geospatial
    */
-  async getBoundingBox(column?: string): Promise<[number, number, number, number]> {
-    return await getBoundingBox(this, column);
+  async getBoundingBox(
+    column?: string,
+    options: { decimals?: number } = {},
+  ): Promise<[number, number, number, number]> {
+    return await getBoundingBox(this, column, options);
   }
 
   /**

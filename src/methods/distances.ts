@@ -23,6 +23,7 @@ import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import validateGraphTemporalEvents from "../helpers/validateGraphTemporalEvents.ts";
 
 type DistancesOptions = GraphTemporalOptions & {
+  decimals?: number;
   direction?: GraphDirection;
   outputTable?: string | boolean;
   weight?: string;
@@ -79,6 +80,8 @@ export default function distances(
     method: "distances()",
     parameters,
     outputTable: options.outputTable,
+    decimals: options.decimals,
+    roundedColumns: options.weight === undefined ? [] : ["total"],
     preflight:
       temporalOptions === undefined
         ? undefined

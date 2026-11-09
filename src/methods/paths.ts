@@ -21,6 +21,7 @@ import validateGraphTemporalEvents from "../helpers/validateGraphTemporalEvents.
 import type { TableSchema } from "../helpers/pendingOps.ts";
 
 type PathsOptions = GraphTemporalOptions & {
+  decimals?: number;
   elapsedTime?: boolean;
   direction?: GraphDirection;
   outputTable?: string | boolean;
@@ -83,6 +84,8 @@ export default function paths(
     method: "paths()",
     parameters,
     outputTable: options.outputTable,
+    decimals: options.decimals,
+    roundedColumns: ["total"],
     preflight:
       temporalOptions === undefined
         ? undefined
