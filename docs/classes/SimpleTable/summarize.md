@@ -68,7 +68,7 @@ The statistics to compute. Can be a single statistic (e.g., `"mean"`), an array 
 
 `this`
 
-A table instance containing the summarized data, or the original rows plus statistics when `keepRows` is `true` (either the current table or a new table), so methods can be chained. When summarizing more than one column, a `column` column identifies which input column each row summarizes.
+A table instance containing the summarized data, or the original rows plus statistics when `keepRows` is `true`, so methods can be chained. When summarizing more than one column, a `column` column identifies which input column each row summarizes.
 
 ## Examples
 

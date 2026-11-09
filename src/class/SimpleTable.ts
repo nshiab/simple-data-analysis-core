@@ -6212,7 +6212,7 @@ export default class SimpleTable extends Simple {
    * @param options.outputTable - If `true`, the results will be stored in a new table with a generated name. If a string, it will be used as the name for the new table. If `false` or omitted, the current table will be overwritten. Defaults to `false`.
    * @param options.datesToMs - If `true`, timestamps, dates, and times will be converted to milliseconds before summarizing. This is useful when summarizing mixed data types (numbers and dates) as columns must be of the same type for aggregation.
    * @param options.keepRows - If `true`, keeps every original row and adds the statistics as columns. Supports at most one summarized column. Defaults to `false`.
-   * @returns A table instance containing the summarized data, or the original rows plus statistics when `keepRows` is `true` (either the current table or a new table), so methods can be chained. When summarizing more than one column, a `column` column identifies which input column each row summarizes.
+   * @returns A table instance containing the summarized data, or the original rows plus statistics when `keepRows` is `true`, so methods can be chained. When summarizing more than one column, a `column` column identifies which input column each row summarizes.
    * @category Analyzing Data
    */
   summarize(
