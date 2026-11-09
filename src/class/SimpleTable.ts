@@ -98,6 +98,7 @@ import skip from "../methods/skip.ts";
 import selectColumns from "../methods/selectColumns.ts";
 import sort from "../methods/sort.ts";
 import loadData from "../methods/loadData.ts";
+import loadFilePaths from "../methods/loadFilePaths.ts";
 import renameTable from "../methods/renameTable.ts";
 import writeData from "../methods/writeData.ts";
 import getBoundingBox from "../methods/getBoundingBox.ts";
@@ -646,6 +647,35 @@ export default class SimpleTable extends Simple {
     } = {},
   ): this {
     loadData(this, files, options);
+    return this;
+  }
+
+  /**
+   * Loads the absolute paths of local files that match one or more glob patterns
+   * into a single `path` column. Use `*` to match within one folder and `**` to
+   * search at any depth.
+   *
+   * Relative patterns start from the current working directory when you call
+   * this method. For example, if you run your script from `/project`,
+   * `./documents/*.pdf` searches `/project/documents`.
+   *
+   * @example
+   * ```ts
+   * await table.loadFilePaths("./documents/*.pdf").log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Find all files under documents and JPGs directly inside photos.
+   * await table.loadFilePaths(["./documents/**", "./photos/*.jpg"]).log();
+   * ```
+   *
+   * @param patterns - A local glob pattern or an array of local glob patterns.
+   * @returns The table, so methods can be chained.
+   * @category Importing Data
+   */
+  loadFilePaths(patterns: string | string[]): this {
+    loadFilePaths(this, patterns);
     return this;
   }
 
