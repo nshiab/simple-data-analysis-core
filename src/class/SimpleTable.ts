@@ -2096,11 +2096,18 @@ export default class SimpleTable extends Simple {
 
   /**
    * Keeps rows in this table that have specific values in specified columns, removing all other rows.
+   * By default, a row must match every specified column.
    *
    * @example
    * ```ts
    * // Keep only rows where 'job' is 'accountant' or 'developer', AND 'city' is 'Montreal'
    * await table.keepValues({ job: ["accountant", "developer"], city: "Montreal" }).log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Keep rows where 'job' is 'accountant' or 'developer', OR 'city' is 'Montreal'
+   * await table.keepValues({ job: ["accountant", "developer"], city: "Montreal" }, { match: "any" }).log();
    * ```
    *
    * @example
@@ -2115,11 +2122,16 @@ export default class SimpleTable extends Simple {
    * await table.keepValues({ status: null }).log();
    * ```
    * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to keep in those columns. Use `null` to keep rows where a column is `NULL`.
+   * @param options - Optional configuration for matching across columns.
+   * @param options.match - Use `"all"` (default) to keep rows that match every specified column or `"any"` to keep rows that match at least one.
    * @returns The table, so methods can be chained.
    * @category Selecting or Filtering Data
    */
-  keepValues(columnsAndValues: { [key: string]: unknown }): this {
-    keepValues(this, columnsAndValues);
+  keepValues(
+    columnsAndValues: { [key: string]: unknown },
+    options: { match?: "all" | "any" } = {},
+  ): this {
+    keepValues(this, columnsAndValues, options);
     return this;
   }
 
@@ -2180,11 +2192,18 @@ export default class SimpleTable extends Simple {
 
   /**
    * Removes rows from this table that have specific values in specified columns.
+   * By default, a row is removed if it matches at least one specified column.
+   *
+   * @example
+   * ```ts
+   * // Remove rows where 'job' is 'accountant' or 'developer', OR 'city' is 'Montreal'
+   * await table.removeValues({ job: ["accountant", "developer"], city: "Montreal" }).log();
+   * ```
    *
    * @example
    * ```ts
    * // Remove rows where 'job' is 'accountant' or 'developer', AND 'city' is 'Montreal'
-   * await table.removeValues({ job: ["accountant", "developer"], city: "Montreal" }).log();
+   * await table.removeValues({ job: ["accountant", "developer"], city: "Montreal" }, { match: "all" }).log();
    * ```
    *
    * @example
@@ -2198,12 +2217,17 @@ export default class SimpleTable extends Simple {
    * // Remove rows where 'status' is NULL
    * await table.removeValues({ status: null }).log();
    * ```
-   * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to remove from those columns. Use `null` to remove rows where a column is `NULL`; otherwise, `NULL` rows are retained.
+   * @param columnsAndValues - An object where keys are column names and values are the specific values (or an array of values) to match in those columns. Include `null` to match `NULL` values in a column.
+   * @param options - Optional configuration for matching across columns.
+   * @param options.match - Use `"any"` (default) to remove rows that match at least one specified column or `"all"` to remove rows that match every specified column.
    * @returns The table, so methods can be chained.
    * @category Selecting or Filtering Data
    */
-  removeValues(columnsAndValues: { [key: string]: unknown }): this {
-    removeValues(this, columnsAndValues);
+  removeValues(
+    columnsAndValues: { [key: string]: unknown },
+    options: { match?: "all" | "any" } = {},
+  ): this {
+    removeValues(this, columnsAndValues, options);
     return this;
   }
 

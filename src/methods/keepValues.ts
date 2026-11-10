@@ -6,6 +6,7 @@ import prepareValueFilters, { type ValueFilter } from "../helpers/prepareValueFi
 export default function keepValues(
   simpleTable: SimpleTable,
   columnsAndValues: { [key: string]: unknown },
+  { match = "all" }: { match?: "all" | "any" } = {},
 ) {
   const captured = Object.fromEntries(
     Object.entries(columnsAndValues).map(([column, values]) => [
@@ -17,14 +18,14 @@ export default function keepValues(
   queueOp(simpleTable, {
     kind: "fusable",
     method: "keepValues()",
-    parameters: { columnsAndValues: captured },
+    parameters: { columnsAndValues: captured, options: { match } },
     values: filters.flatMap((filter) => filter.values),
     needsSchema: false,
-    buildSelect: (input) => keepValuesSelect(input, filters),
+    buildSelect: (input) => keepValuesSelect(input, filters, match),
   });
 }
 
-function keepValuesSelect(input: string, filters: ValueFilter[]) {
+function keepValuesSelect(input: string, filters: ValueFilter[], match: "all" | "any") {
   let query = `SELECT * FROM ${input} WHERE\n`;
 
   const conditions = [];
@@ -43,7 +44,7 @@ function keepValuesSelect(input: string, filters: ValueFilter[]) {
     );
   }
 
-  query += conditions.join("\nAND ");
+  query += conditions.join(match === "any" ? "\nOR " : "\nAND ");
 
   return query;
 }
