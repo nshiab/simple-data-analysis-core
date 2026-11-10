@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.22**](../../index.md)
+[**Simple Data Analysis Core v2.1.23**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **renameColumns**(`names`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:2273](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L2273)
+Defined in: src/class/SimpleTable.ts:2297
 
 Renames one or more columns in the table. Throws if a source column does
 not exist, so a typo fails loudly instead of being silently ignored.

@@ -1,8 +1,11 @@
-**Simple Data Analysis Core v2.1.22**
+**Simple Data Analysis Core v2.1.23**
 
 ***
 
 # Simple data analysis core (SDA-core)
+
+> [!NOTE]
+> **[Read the API documentation](https://nshiab.github.io/simple-data-analysis-core/)**
 
 SDA-core is a lightweight DuckDB-powered TypeScript library for tabular, SQL,
 CSV, Parquet, and geospatial data analysis on Node.js. It has one runtime dependency: DuckDB.
@@ -14,8 +17,7 @@ visualization features, use the full
 [simple-data-analysis library](https://github.com/nshiab/simple-data-analysis).
 
 The library is available on
-[npm](https://www.npmjs.com/package/@nshiab/simple-data-analysis-core), with its
-[API documentation](https://nshiab.github.io/simple-data-analysis-core/).
+[npm](https://www.npmjs.com/package/@nshiab/simple-data-analysis-core).
 
 AI coding assistants and agents can start with the concise
 [llms.txt](https://github.com/nshiab/simple-data-analysis-core/blob/main/llms.txt)

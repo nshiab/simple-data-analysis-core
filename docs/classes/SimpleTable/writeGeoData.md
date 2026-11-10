@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.22**](../../index.md)
+[**Simple Data Analysis Core v2.1.23**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **writeGeoData**(`file`, `options?`): `Promise`\<[`SimpleTable`](../SimpleTable.md)\>
 
-Defined in: [src/class/SimpleTable.ts:9085](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L9085)
+Defined in: src/class/SimpleTable.ts:9109
 
 Writes the table's geospatial data to a file in GeoJSON, GeoParquet, or Shapefile format.
 If the specified path does not exist, it will be created.

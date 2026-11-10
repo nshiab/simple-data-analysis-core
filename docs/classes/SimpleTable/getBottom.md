@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.22**](../../index.md)
+[**Simple Data Analysis Core v2.1.23**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **getBottom**(`count`, `options?`): `Promise`\<`object`[]\>
 
-Defined in: [src/class/SimpleTable.ts:7759](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L7759)
+Defined in: src/class/SimpleTable.ts:7783
 
 Returns the bottom `n` rows of the table, optionally filtered by SQL conditions.
 By default, the last row will be returned first. To preserve the original order, use the `originalOrder` option.

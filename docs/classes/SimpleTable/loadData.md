@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.22**](../../index.md)
+[**Simple Data Analysis Core v2.1.23**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **loadData**(`files`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:620](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L620)
+Defined in: src/class/SimpleTable.ts:620
 
 Loads data from one or more local or remote files into the table.
 Supported file formats include CSV, JSON, Parquet, and Excel.

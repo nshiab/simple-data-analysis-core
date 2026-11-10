@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.22**](../../index.md)
+[**Simple Data Analysis Core v2.1.23**](../../index.md)
 
 ***
 
@@ -6,11 +6,12 @@
 
 # Method: keepValues()
 
-> **keepValues**(`columnsAndValues`): `this`
+> **keepValues**(`columnsAndValues`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:2121](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L2121)
+Defined in: src/class/SimpleTable.ts:2130
 
 Keeps rows in this table that have specific values in specified columns, removing all other rows.
+By default, a row must match every specified column.
 
 ## Parameters
 
@@ -19,6 +20,16 @@ Keeps rows in this table that have specific values in specified columns, removin
 \{\[`key`: `string`\]: `unknown`; \}
 
 An object where keys are column names and values are the specific values (or an array of values) to keep in those columns. Use `null` to keep rows where a column is `NULL`.
+
+### options?
+
+Optional configuration for matching across columns.
+
+#### match?
+
+`"all"` \| `"any"`
+
+Use `"all"` (default) to keep rows that match every specified column or `"any"` to keep rows that match at least one.
 
 ## Returns
 
@@ -31,6 +42,11 @@ The table, so methods can be chained.
 ```ts
 // Keep only rows where 'job' is 'accountant' or 'developer', AND 'city' is 'Montreal'
 await table.keepValues({ job: ["accountant", "developer"], city: "Montreal" }).log();
+```
+
+```ts
+// Keep rows where 'job' is 'accountant' or 'developer', OR 'city' is 'Montreal'
+await table.keepValues({ job: ["accountant", "developer"], city: "Montreal" }, { match: "any" }).log();
 ```
 
 ```ts

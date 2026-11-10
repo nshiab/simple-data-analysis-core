@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.22**](../../index.md)
+[**Simple Data Analysis Core v2.1.23**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **simplify**(`tolerance`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8666](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L8666)
+Defined in: src/class/SimpleTable.ts:8690
 
 Simplifies geometries while preserving their overall coverage. A higher tolerance results in more significant simplification.
 

@@ -1,8 +1,8 @@
-[**Simple Data Analysis Core v2.1.22**](index.md)
+[**Simple Data Analysis Core v2.1.23**](index.md)
 
 ***
 
-# Simple Data Analysis Core v2.1.22
+# Simple Data Analysis Core v2.1.23
 
 Combined API reference for `@nshiab/simple-data-analysis-core` and its `/helpers` entry point.
 

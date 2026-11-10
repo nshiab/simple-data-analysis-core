@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.22**](../../index.md)
+[**Simple Data Analysis Core v2.1.23**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **loadFilePaths**(`patterns`): `this`
 
-Defined in: [src/class/SimpleTable.ts:677](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L677)
+Defined in: src/class/SimpleTable.ts:677
 
 Loads the absolute paths of local files that match one or more glob patterns
 into a single `path` column. Use `*` to match within one folder and `**` to

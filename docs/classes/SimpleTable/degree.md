@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.22**](../../index.md)
+[**Simple Data Analysis Core v2.1.23**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **degree**(`sourceColumn`, `targetColumn`, `options?`): [`SimpleTable`](../SimpleTable.md)
 
-Defined in: [src/class/SimpleTable.ts:2858](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L2858)
+Defined in: src/class/SimpleTable.ts:2882
 
 Counts the incoming and outgoing connections for every node found in the
 source and target columns. By default, each input row is counted separately,

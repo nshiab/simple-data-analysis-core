@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.22**](../../index.md)
+[**Simple Data Analysis Core v2.1.23**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **randomPoint**(`newColumn`, `tries`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8723](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L8723)
+Defined in: src/class/SimpleTable.ts:8747
 
 Generates a random point within the geometries of a specified column.
 

@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.22**](../../index.md)
+[**Simple Data Analysis Core v2.1.23**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **getFirstRow**(`options?`): `Promise`\<\{\[`key`: `string`\]: `unknown`; \} \| `null`\>
 
-Defined in: [src/class/SimpleTable.ts:7646](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L7646)
+Defined in: src/class/SimpleTable.ts:7670
 
 Returns the first row of the table, optionally filtered by SQL conditions.
 With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.

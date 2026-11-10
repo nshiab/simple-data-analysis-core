@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.22**](../../index.md)
+[**Simple Data Analysis Core v2.1.23**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **loadArray**(`rows`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:494](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L494)
+Defined in: src/class/SimpleTable.ts:494
 
 Loads an array of JavaScript objects into the table. Types are inferred for
 numbers, bigints, strings, booleans, and Date values. Array and object cells

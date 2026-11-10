@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.22**](../../index.md)
+[**Simple Data Analysis Core v2.1.23**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **getQuantile**(`column`, `quantile`, `options?`): `Promise`\<`number`\>
 
-Defined in: [src/class/SimpleTable.ts:7583](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L7583)
+Defined in: src/class/SimpleTable.ts:7607
 
 Returns the value of a specific quantile from the values in a given numeric column.
 

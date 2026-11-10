@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.22**](../../index.md)
+[**Simple Data Analysis Core v2.1.23**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **truncate**(`column`, `length`): `this`
 
-Defined in: [src/class/SimpleTable.ts:5128](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L5128)
+Defined in: src/class/SimpleTable.ts:5152
 
 Truncates string values in a specified column to a maximum number of characters.
 

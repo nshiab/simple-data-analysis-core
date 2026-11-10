@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.22**](../../index.md)
+[**Simple Data Analysis Core v2.1.23**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **lower**(`columns`): `this`
 
-Defined in: [src/class/SimpleTable.ts:5058](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L5058)
+Defined in: src/class/SimpleTable.ts:5082
 
 Converts string values in the specified columns to lowercase.
 

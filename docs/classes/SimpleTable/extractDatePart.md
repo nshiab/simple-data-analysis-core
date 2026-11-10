@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.22**](../../index.md)
+[**Simple Data Analysis Core v2.1.23**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **extractDatePart**(`column`, `parts`): `this`
 
-Defined in: [src/class/SimpleTable.ts:4700](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L4700)
+Defined in: src/class/SimpleTable.ts:4724
 
 Extracts one or more components from a temporal column into new columns.
 Pass a single part to create a column with that part's name, or pass an

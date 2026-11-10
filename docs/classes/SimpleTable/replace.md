@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.22**](../../index.md)
+[**Simple Data Analysis Core v2.1.23**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **replace**(`columns`, `replacements`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:5028](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.22/src/class/SimpleTable.ts#L5028)
+Defined in: src/class/SimpleTable.ts:5052
 
 Replaces specified strings in the selected columns.
 Use `["all"]` to target a column literally named `all`.
