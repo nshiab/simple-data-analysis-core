@@ -2,6 +2,32 @@ import { test, expect } from "vite-plus/test";
 
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+test.each([
+  { options: undefined, expectedIds: [1] },
+  { options: { match: "all" }, expectedIds: [1] },
+  { options: { match: "any" }, expectedIds: [1, 2, 3] },
+] as const)(
+  "should keep rows that match across columns with $options",
+  async ({ options, expectedIds }) => {
+    const sdb = new SimpleDB();
+    const table = sdb.newTable();
+    table.loadArray([
+      { id: 1, job: "Clerk", city: "Montreal" },
+      { id: 2, job: null, city: "Ottawa" },
+      { id: 3, job: "Engineer", city: "Montreal" },
+      { id: 4, job: "Engineer", city: null },
+    ]);
+
+    const data = await table
+      .keepValues({ job: ["Clerk", null], city: "Montreal" }, options)
+      .sort({ id: "asc" })
+      .getData();
+
+    expect(data.map((row) => row.id)).toStrictEqual(expectedIds);
+    await sdb.close();
+  },
+);
+
 test("should keep only specific rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();

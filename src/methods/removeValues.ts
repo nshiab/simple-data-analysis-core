@@ -6,6 +6,7 @@ import prepareValueFilters, { type ValueFilter } from "../helpers/prepareValueFi
 export default function removeValues(
   simpleTable: SimpleTable,
   columnsAndValues: { [key: string]: unknown },
+  { match = "any" }: { match?: "all" | "any" } = {},
 ) {
   const captured = Object.fromEntries(
     Object.entries(columnsAndValues).map(([column, values]) => [
@@ -17,14 +18,14 @@ export default function removeValues(
   queueOp(simpleTable, {
     kind: "fusable",
     method: "removeValues()",
-    parameters: { columnsAndValues: captured },
+    parameters: { columnsAndValues: captured, options: { match } },
     values: filters.flatMap((filter) => filter.values),
     needsSchema: false,
-    buildSelect: (input) => removeValuesSelect(input, filters),
+    buildSelect: (input) => removeValuesSelect(input, filters, match),
   });
 }
 
-function removeValuesSelect(input: string, filters: ValueFilter[]) {
+function removeValuesSelect(input: string, filters: ValueFilter[], match: "all" | "any") {
   let query = `SELECT * FROM ${input} WHERE\n`;
 
   const conditions = [];
@@ -45,7 +46,8 @@ function removeValuesSelect(input: string, filters: ValueFilter[]) {
     );
   }
 
-  query += conditions.join("\nAND ");
+  // Each condition checks whether the row fails to match the column.
+  query += conditions.join(match === "all" ? "\nOR " : "\nAND ");
 
   return query;
 }

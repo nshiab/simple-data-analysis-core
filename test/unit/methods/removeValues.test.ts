@@ -2,6 +2,32 @@ import { test, expect } from "vite-plus/test";
 
 import SimpleDB from "../../../src/class/SimpleDB.ts";
 
+test.each([
+  { options: undefined, expectedIds: [4] },
+  { options: { match: "any" }, expectedIds: [4] },
+  { options: { match: "all" }, expectedIds: [2, 3, 4] },
+] as const)(
+  "should remove rows that match across columns with $options",
+  async ({ options, expectedIds }) => {
+    const sdb = new SimpleDB();
+    const table = sdb.newTable();
+    table.loadArray([
+      { id: 1, job: "Clerk", city: "Montreal" },
+      { id: 2, job: null, city: "Ottawa" },
+      { id: 3, job: "Engineer", city: "Montreal" },
+      { id: 4, job: "Engineer", city: null },
+    ]);
+
+    const data = await table
+      .removeValues({ job: ["Clerk", null], city: "Montreal" }, options)
+      .sort({ id: "asc" })
+      .getData();
+
+    expect(data.map((row) => row.id)).toStrictEqual(expectedIds);
+    await sdb.close();
+  },
+);
+
 test("should remove specific rows", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
