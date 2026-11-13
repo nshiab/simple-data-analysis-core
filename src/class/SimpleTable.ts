@@ -684,10 +684,6 @@ export default class SimpleTable extends Simple {
    * Loads a simple HTML table from a web page. A first row made entirely of
    * `<th>` cells supplies the column names. Data rows are loaded as strings.
    *
-   * Use rectangular tables with unique, nonempty headers and explicit closing
-   * tags for tables, rows, and cells. Nested tables and merged cells are
-   * unsupported. The table must be present in the fetched HTML.
-   *
    * Provide `columns` to rename the headers or load a table whose first row
    * contains data. The number of names must match the number of cells per row.
    *
