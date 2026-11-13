@@ -689,20 +689,29 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * await table.loadHtmlTable("https://example.com/results").log();
+   * await table.loadHtmlTable("https://example.com/results", { index: 1 }).log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * await table.loadHtmlTable("https://example.com/results", { id: "results-table" }).log();
    * ```
    *
    * @example
    * ```ts
    * await table
-   *   .loadHtmlTable("https://example.com/results", { id: "results", columns: ["city", "population"] })
+   *   .loadHtmlTable("https://example.com/results", {
+   *     id: "results-section",
+   *     index: 1,
+   *     columns: ["city", "population"],
+   *   })
    *   .log();
    * ```
    *
    * @param url - The HTTP or HTTPS URL of the web page.
    * @param options - Options for choosing the table and naming its columns.
-   * @param options.index - The zero-based table index. Defaults to `0` when `id` is omitted.
-   * @param options.id - The table's HTML `id` attribute value, such as `"results"`. Use either `id` or `index`.
+   * @param options.index - The zero-based table index within the page or the element selected by `id`. Defaults to `0`.
+   * @param options.id - The HTML `id` of a table or an element containing tables. A table with this ID is selected at index `0`.
    * @param options.columns - Custom column names. Required when the table has no header row.
    * @returns The table, so methods can be chained.
    * @category Importing Data

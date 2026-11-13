@@ -4,6 +4,8 @@ import queueOp from "../helpers/queueOp.ts";
 import { executePreparedArray } from "./loadArray.ts";
 
 const attributes = String.raw`(?:[^"'<>]|"[^"]*"|'[^']*')*`;
+const htmlTag = new RegExp(String.raw`<(/?)([a-z][\w:-]*)(?=[\s/>])(${attributes})>`, "gi");
+const voidTag = /^(?:area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/;
 const sectionTags = new RegExp(String.raw`<\/?(?:thead|tbody|tfoot)(?=[\s>])${attributes}>`, "gi");
 const nestedStructure = /<\/?(?:table|thead|tbody|tfoot|tr|th|td)(?=[\s/>])/i;
 const entities: Record<string, string> = {
@@ -18,12 +20,9 @@ const entities: Record<string, string> = {
 export default function loadHtmlTable(
   table: SimpleTable,
   url: string,
-  { index, id, columns }: { index?: number; id?: string; columns?: string[] } = {},
+  { index = 0, id, columns }: { index?: number; id?: string; columns?: string[] } = {},
 ): void {
-  if (index !== undefined && id !== undefined) {
-    throw new Error("loadHtmlTable() accepts either options.id or options.index.");
-  }
-  if (index !== undefined && (!Number.isSafeInteger(index) || index < 0)) {
+  if (!Number.isSafeInteger(index) || index < 0) {
     throw new Error("loadHtmlTable() requires a nonnegative integer table index.");
   }
 
@@ -40,7 +39,7 @@ export default function loadHtmlTable(
     execute: async () => {
       try {
         const html = await fetchHtml(pageUrl.href);
-        await executePreparedArray(table, parseTable(html, id ?? index ?? 0, parameters.columns));
+        await executePreparedArray(table, parseTable(html, parameters));
       } catch (cause) {
         if (cause instanceof SDAError) throw cause;
         throw new SDAError({ method, parameters, query: "", cause });
@@ -61,19 +60,18 @@ function elementPattern(tags: string): RegExp {
   return new RegExp(String.raw`<(${tags})(?=[\s>])(${attributes})>([\s\S]*?)<\/\1\s*>`, "gi");
 }
 
-function parseTable(html: string, selection: number | string, columns: string[] | undefined) {
+function parseTable(
+  html: string,
+  { index, id, columns }: { index: number; id?: string; columns?: string[] },
+) {
   const page = html.replace(/<!--[\s\S]*?-->/g, "").replace(elementPattern("script|style"), "");
-  const tables = Array.from(page.matchAll(elementPattern("table")));
-  const table =
-    typeof selection === "number"
-      ? tables[selection]
-      : tables.find((table) => readTableId(table[2]) === selection);
+  const scope = id === undefined ? page : getElementHtml(page, id);
+  const table = Array.from(scope.matchAll(elementPattern("table")))[index];
   if (table === undefined || /<table(?=[\s>])/i.test(table[3])) {
-    const target =
-      typeof selection === "number"
-        ? `at index ${selection}`
-        : `with ID ${JSON.stringify(selection)}`;
-    throw new Error(`Expected a complete HTML table without nested tables ${target}.`);
+    const target = id === undefined ? "" : ` in the selection with ID ${JSON.stringify(id)}`;
+    throw new Error(
+      `Expected a complete HTML table without nested tables at index ${index}${target}.`,
+    );
   }
 
   const body = table[3].replace(elementPattern("caption|colgroup"), "").replace(sectionTags, "");
@@ -116,9 +114,32 @@ function parseTable(html: string, selection: number | string, columns: string[] 
   };
 }
 
-function readTableId(tableAttributes: string): string | undefined {
+function getElementHtml(page: string, id: string): string {
+  const tags = page.matchAll(htmlTag);
+  for (const opening of tags) {
+    const [, closing, name, tagAttributes] = opening;
+    if (closing || readElementId(tagAttributes) !== id) continue;
+
+    const tag = name.toLowerCase();
+    if (voidTag.test(tag)) return "";
+
+    // Match the selected element's closing tag even when it contains the same tag.
+    let depth = 1;
+    for (const end of tags) {
+      if (end[2].toLowerCase() !== tag) continue;
+      depth += end[1] ? -1 : 1;
+      if (depth === 0) {
+        return page.slice(opening.index, end.index + end[0].length);
+      }
+    }
+    throw new Error(`Expected a closing tag for the HTML element with ID ${JSON.stringify(id)}.`);
+  }
+  throw new Error(`Could not find an HTML element with ID ${JSON.stringify(id)}.`);
+}
+
+function readElementId(elementAttributes: string): string | undefined {
   const attributes = /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
-  for (const [, name, doubleQuoted, singleQuoted, unquoted] of tableAttributes.matchAll(
+  for (const [, name, doubleQuoted, singleQuoted, unquoted] of elementAttributes.matchAll(
     attributes,
   )) {
     if (name.toLowerCase() === "id") {
@@ -136,10 +157,7 @@ function readElements(html: string, tags: string, description: string): RegExpMa
 }
 
 function decodeCell(html: string): string {
-  const text = html.replace(
-    new RegExp(String.raw`<\/?[a-z][\w:-]*(?=[\s/>])${attributes}>`, "gi"),
-    "",
-  );
+  const text = html.replace(htmlTag, "");
   return decodeEntities(text).trim();
 }
 

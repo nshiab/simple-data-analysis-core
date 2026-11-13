@@ -68,7 +68,7 @@ test.each(['ID = "Results"', "id='Results'", "id=Res&#117;lts"])(
   },
 );
 
-test("loadHtmlTable reports a missing table ID", async () => {
+test("loadHtmlTable reports a missing element ID", async () => {
   vi.spyOn(globalThis, "fetch").mockResolvedValue(
     new Response("<table id=other><tr><th>Name</th></tr><tr><td>First</td></tr></table>"),
   );
@@ -81,16 +81,49 @@ test("loadHtmlTable reports a missing table ID", async () => {
   }
 });
 
-test("loadHtmlTable rejects supplying both an ID and an index", async () => {
-  const sdb = new SimpleDB();
-  try {
-    expect(() => sdb.newTable().loadHtmlTable(url, { id: "results", index: 0 })).toThrow(
-      /either options.id or options.index/,
+test.each([
+  { options: { id: "results" }, name: "First" },
+  { options: { id: "results", index: 1 }, name: "Second" },
+])(
+  "loadHtmlTable selects $name within the element with the requested ID",
+  async ({ options, name }) => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(`
+      <table><tr><th>Name</th></tr><tr><td>Outside</td></tr></table>
+      <section id=results>
+        <section><table><tr><th>Name</th></tr><tr><td>First</td></tr></table></section>
+        <table><tr><th>Name</th></tr><tr><td>Second</td></tr></table>
+      </section>
+      <table><tr><th>Name</th></tr><tr><td>After</td></tr></table>`),
     );
-  } finally {
-    await sdb.close();
-  }
-});
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable().loadHtmlTable(url, options);
+      expect(await table.getData()).toStrictEqual([{ Name: name }]);
+    } finally {
+      await sdb.close();
+    }
+  },
+);
+
+test.each(["section", "table"])(
+  "loadHtmlTable keeps the index within the selected %s",
+  async (tag) => {
+    const tableHtml = "<table><tr><th>Name</th></tr><tr><td>First</td></tr></table>";
+    const scope =
+      tag === "table"
+        ? tableHtml.replace("<table>", "<table id=results>")
+        : `<section id=results>${tableHtml}</section>`;
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(`${scope}${tableHtml}`));
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable().loadHtmlTable(url, { id: "results", index: 1 });
+      await expect(table.getData()).rejects.toThrow(/at index 1.*with ID "results"/);
+    } finally {
+      await sdb.close();
+    }
+  },
+);
 
 test.each([
   ["<tr><th>City</th><th>Code</th></tr><tr><td>Toronto</td><td>001</td></tr>"],
