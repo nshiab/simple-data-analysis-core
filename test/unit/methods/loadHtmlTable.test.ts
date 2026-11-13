@@ -2,6 +2,7 @@ import { afterEach, expect, test, vi } from "vite-plus/test";
 import { SimpleDB } from "../../../src/index.ts";
 
 const url = "https://example.com/results";
+const expensesUrl = "https://www.ourcommons.ca/proactivedisclosure/en/members/2024/1";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -209,3 +210,44 @@ test("loadHtmlTable reports HTTP failures", async () => {
     await sdb.close();
   }
 });
+
+test.skipIf(process.env.CI === "true")(
+  "loadHtmlTable loads the House of Commons expenses table by ID",
+  async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable().loadHtmlTable(expensesUrl, { id: "data-table" });
+      expect(await table.getColumns()).toStrictEqual([
+        "Name",
+        "Constituency",
+        "Caucus",
+        "Salaries",
+        "Travel",
+        "Hospitality",
+        "Contracts",
+      ]);
+      expect(await table.getData()).toContainEqual(
+        expect.objectContaining({ Constituency: "Edmonton Manning", Salaries: "$53,042.45" }),
+      );
+    } finally {
+      await sdb.close();
+    }
+  },
+);
+
+test.skipIf(process.env.CI === "true")(
+  "loadHtmlTable loads the live expenses table by index with custom column names",
+  async () => {
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable().loadHtmlTable(expensesUrl, {
+        index: 0,
+        columns: ["name", "riding", "caucus", "salaries", "travel", "hospitality", "contracts"],
+      });
+      const firstRow = await table.getFirstRow();
+      expect(firstRow).toMatchObject({ riding: "Edmonton Manning", travel: "$17,000.89" });
+    } finally {
+      await sdb.close();
+    }
+  },
+);
