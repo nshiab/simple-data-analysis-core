@@ -48,6 +48,50 @@ test("loadHtmlTable fetches in chain order and selects the requested table", asy
   }
 });
 
+test.each(['ID = "Results"', "id='Results'", "id=Res&#117;lts"])(
+  "loadHtmlTable selects a table with %s",
+  async (attribute) => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(`
+        <table id=results data-id=Results title="contains id='Results'">
+          <tr><th>Name</th></tr><tr><td>First</td></tr>
+        </table>
+        <table ${attribute}><tr><th>Name</th></tr><tr><td>Second</td></tr></table>`),
+    );
+    const sdb = new SimpleDB();
+    try {
+      const table = sdb.newTable().loadHtmlTable(url, { id: "Results", columns: ["city"] });
+      expect(await table.getData()).toStrictEqual([{ city: "Second" }]);
+    } finally {
+      await sdb.close();
+    }
+  },
+);
+
+test("loadHtmlTable reports a missing table ID", async () => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    new Response("<table id=other><tr><th>Name</th></tr><tr><td>First</td></tr></table>"),
+  );
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable().loadHtmlTable(url, { id: "results" });
+    await expect(table.getData()).rejects.toThrow(/with ID "results"/);
+  } finally {
+    await sdb.close();
+  }
+});
+
+test("loadHtmlTable rejects supplying both an ID and an index", async () => {
+  const sdb = new SimpleDB();
+  try {
+    expect(() => sdb.newTable().loadHtmlTable(url, { id: "results", index: 0 })).toThrow(
+      /either options.id or options.index/,
+    );
+  } finally {
+    await sdb.close();
+  }
+});
+
 test.each([
   ["<tr><th>City</th><th>Code</th></tr><tr><td>Toronto</td><td>001</td></tr>"],
   ["<tr><th scope='row'>Toronto</th><td>001</td></tr>"],
