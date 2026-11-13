@@ -99,6 +99,7 @@ import selectColumns from "../methods/selectColumns.ts";
 import sort from "../methods/sort.ts";
 import loadData from "../methods/loadData.ts";
 import loadFilePaths from "../methods/loadFilePaths.ts";
+import loadHtmlTable from "../methods/loadHtmlTable.ts";
 import renameTable from "../methods/renameTable.ts";
 import writeData from "../methods/writeData.ts";
 import getBoundingBox from "../methods/getBoundingBox.ts";
@@ -676,6 +677,59 @@ export default class SimpleTable extends Simple {
    */
   loadFilePaths(patterns: string | string[]): this {
     loadFilePaths(this, patterns);
+    return this;
+  }
+
+  /**
+   * Loads a simple HTML table from a web page. A first row made entirely of
+   * `<th>` cells supplies the column names. Data rows are loaded as strings.
+   *
+   * Provide `columns` to rename the headers or load a table whose first row
+   * contains data. The number of names must match the number of cells per row.
+   *
+   * @example
+   * ```ts
+   * // Load the first table on the page.
+   * await table.loadHtmlTable("https://example.com/results").log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Load the second table on the page.
+   * await table.loadHtmlTable("https://example.com/results", { index: 1 }).log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Load the table with this HTML ID.
+   * await table.loadHtmlTable("https://example.com/results", { id: "results-table" }).log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Load the second table in the section and name its columns.
+   * await table
+   *   .loadHtmlTable("https://example.com/results", {
+   *     id: "results-section",
+   *     index: 1,
+   *     columns: ["city", "population"],
+   *   })
+   *   .log();
+   * ```
+   *
+   * @param url - The HTTP or HTTPS URL of the web page.
+   * @param options - Options for choosing the table and naming its columns.
+   * @param options.index - The zero-based table index within the page or the element selected by `id`. Defaults to `0`.
+   * @param options.id - The HTML `id` of a table or an element containing tables. A table with this ID is selected at index `0`.
+   * @param options.columns - Custom column names. Required when the table has no header row.
+   * @returns The table, so methods can be chained.
+   * @category Importing Data
+   */
+  loadHtmlTable(
+    url: string,
+    options: { index?: number; id?: string; columns?: string[] } = {},
+  ): this {
+    loadHtmlTable(this, url, options);
     return this;
   }
 

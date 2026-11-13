@@ -1,0 +1,173 @@
+import SDAError from "../class/SDAError.ts";
+import type SimpleTable from "../class/SimpleTable.ts";
+import queueOp from "../helpers/queueOp.ts";
+import { executePreparedArray } from "./loadArray.ts";
+
+const attributes = String.raw`(?:[^"'<>]|"[^"]*"|'[^']*')*`;
+const htmlTag = new RegExp(String.raw`<(/?)([a-z][\w:-]*)(?=[\s/>])(${attributes})>`, "gi");
+const voidTag = /^(?:area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/;
+const sectionTags = new RegExp(String.raw`<\/?(?:thead|tbody|tfoot)(?=[\s>])${attributes}>`, "gi");
+const nestedStructure = /<\/?(?:table|thead|tbody|tfoot|tr|th|td)(?=[\s/>])/i;
+const entities: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: "\u00a0",
+};
+
+export default function loadHtmlTable(
+  table: SimpleTable,
+  url: string,
+  { index = 0, id, columns }: { index?: number; id?: string; columns?: string[] } = {},
+): void {
+  if (!Number.isSafeInteger(index) || index < 0) {
+    throw new Error("loadHtmlTable() requires a nonnegative integer table index.");
+  }
+
+  const pageUrl = URL.parse(url);
+  if (pageUrl === null || (pageUrl.protocol !== "http:" && pageUrl.protocol !== "https:")) {
+    throw new Error("loadHtmlTable() requires an HTTP or HTTPS URL.");
+  }
+  const method = "loadHtmlTable()";
+  const parameters = { url: pageUrl.href, index, id, columns: columns?.slice() };
+  queueOp(table, {
+    kind: "barrier",
+    method,
+    parameters,
+    execute: async () => {
+      try {
+        const html = await fetchHtml(pageUrl.href);
+        await executePreparedArray(table, parseTable(html, parameters));
+      } catch (cause) {
+        if (cause instanceof SDAError) throw cause;
+        throw new SDAError({ method, parameters, query: "", cause });
+      }
+    },
+  });
+}
+
+async function fetchHtml(url: string): Promise<string> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Could not fetch the HTML page: ${response.status} ${response.statusText}.`);
+  }
+  return response.text();
+}
+
+function elementPattern(tags: string): RegExp {
+  return new RegExp(String.raw`<(${tags})(?=[\s>])(${attributes})>([\s\S]*?)<\/\1\s*>`, "gi");
+}
+
+function parseTable(
+  html: string,
+  { index, id, columns }: { index: number; id?: string; columns?: string[] },
+) {
+  const page = html.replace(/<!--[\s\S]*?-->/g, "").replace(elementPattern("script|style"), "");
+  const scope = id === undefined ? page : getElementHtml(page, id);
+  const table = Array.from(scope.matchAll(elementPattern("table")))[index];
+  if (table === undefined || /<table(?=[\s>])/i.test(table[3])) {
+    const target = id === undefined ? "" : ` in the selection with ID ${JSON.stringify(id)}`;
+    throw new Error(
+      `Expected a complete HTML table without nested tables at index ${index}${target}.`,
+    );
+  }
+
+  const body = table[3].replace(elementPattern("caption|colgroup"), "").replace(sectionTags, "");
+  const rows = readElements(body, "tr", "table rows").map((row) =>
+    readElements(row[3], "th|td", "row cells"),
+  );
+  const firstRow = rows[0];
+  const hasHeader = firstRow?.length && firstRow.every((cell) => cell[1].toLowerCase() === "th");
+  if (!hasHeader && columns === undefined) {
+    throw new Error("Expected a header row of <th> cells or column names in options.columns.");
+  }
+
+  const values = rows.map((row) =>
+    row.map((cell) => {
+      const cellAttributes = cell[2].replace(/"[^"]*"|'[^']*'/g, "");
+      if (/\s(?:rowspan|colspan)\s*=/i.test(cellAttributes) || nestedStructure.test(cell[3])) {
+        throw new Error("Expected explicitly closed cells without merged or nested cells.");
+      }
+      return decodeCell(cell[3]);
+    }),
+  );
+
+  const keys = columns ?? values[0];
+  const data = hasHeader ? values.slice(1) : values;
+  if (keys.length === 0 || data.length === 0 || values.some((row) => row.length !== keys.length)) {
+    throw new Error(
+      "Expected at least one data row and the same number of cells as column names in every row.",
+    );
+  }
+  const names = keys.map((key) => key.replace(/[A-Z]/g, (letter) => letter.toLowerCase()));
+  if (keys.some((key) => key === "" || key.includes("\0")) || new Set(names).size !== keys.length) {
+    throw new Error("Expected unique, nonempty column names.");
+  }
+
+  return {
+    keys,
+    types: keys.map(() => "VARCHAR"),
+    columnsData: keys.map((_, column) => data.map((row) => row[column])),
+    rowCount: data.length,
+  };
+}
+
+function getElementHtml(page: string, id: string): string {
+  const tags = page.matchAll(htmlTag);
+  for (const opening of tags) {
+    const [, closing, name, tagAttributes] = opening;
+    if (closing || readElementId(tagAttributes) !== id) continue;
+
+    const tag = name.toLowerCase();
+    if (voidTag.test(tag)) return "";
+
+    // Match the selected element's closing tag even when it contains the same tag.
+    let depth = 1;
+    for (const end of tags) {
+      if (end[2].toLowerCase() !== tag) continue;
+      depth += end[1] ? -1 : 1;
+      if (depth === 0) {
+        return page.slice(opening.index, end.index + end[0].length);
+      }
+    }
+    throw new Error(`Expected a closing tag for the HTML element with ID ${JSON.stringify(id)}.`);
+  }
+  throw new Error(`Could not find an HTML element with ID ${JSON.stringify(id)}.`);
+}
+
+function readElementId(elementAttributes: string): string | undefined {
+  const attributes = /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+  for (const [, name, doubleQuoted, singleQuoted, unquoted] of elementAttributes.matchAll(
+    attributes,
+  )) {
+    if (name.toLowerCase() === "id") {
+      return decodeEntities(doubleQuoted ?? singleQuoted ?? unquoted ?? "");
+    }
+  }
+}
+
+function readElements(html: string, tags: string, description: string): RegExpMatchArray[] {
+  const pattern = elementPattern(tags);
+  if (html.replace(pattern, "").trim() !== "") {
+    throw new Error(`Expected explicitly closed ${description}.`);
+  }
+  return Array.from(html.matchAll(pattern));
+}
+
+function decodeCell(html: string): string {
+  const text = html.replace(htmlTag, "");
+  return decodeEntities(text).trim();
+}
+
+function decodeEntities(text: string): string {
+  return text.replace(/&(#(?:x[\da-f]+|\d+)|amp|lt|gt|quot|apos|nbsp);/gi, (_, entity: string) => {
+    const name = entity.toLowerCase();
+    if (!name.startsWith("#")) return entities[name];
+    const code = name.startsWith("#x") ? parseInt(name.slice(2), 16) : Number(name.slice(1));
+    return code > 0 && code <= 0x10ffff && (code < 0xd800 || code > 0xdfff)
+      ? String.fromCodePoint(code)
+      : "\ufffd";
+  });
+}
