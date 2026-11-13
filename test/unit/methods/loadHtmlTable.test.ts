@@ -1,5 +1,9 @@
-import { expect, test, vi } from "vite-plus/test";
+import { afterEach, expect, test, vi } from "vite-plus/test";
 import { SimpleDB } from "../../../src/index.ts";
+
+const url = "https://example.com/results";
+
+afterEach(() => vi.restoreAllMocks());
 
 test("loadHtmlTable loads explicitly closed rows and keeps cell values as strings", async () => {
   const sdb = new SimpleDB();
@@ -15,7 +19,8 @@ test("loadHtmlTable loads explicitly closed rows and keeps cell values as string
           <tr><th scope="row">Toronto</th><td></td></tr>
         </tbody>
       </TABLE>`;
-    const table = sdb.newTable().loadHtmlTable(html);
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(html));
+    const table = sdb.newTable().loadHtmlTable(url);
     expect(await table.getData()).toStrictEqual([
       { City: "Québec & Lévis", Code: "001" },
       { City: "Toronto", Code: "" },
@@ -27,7 +32,6 @@ test("loadHtmlTable loads explicitly closed rows and keeps cell values as string
 });
 
 test("loadHtmlTable fetches in chain order and selects the requested table", async () => {
-  const url = "https://example.com/results";
   const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(
     new Response(`
       <table><tr><th>Name</th></tr><tr><td>First</td></tr></table>
@@ -40,7 +44,48 @@ test("loadHtmlTable fetches in chain order and selects the requested table", asy
     expect(await table.getData()).toStrictEqual([{ Name: "Second" }]);
     expect(fetch).toHaveBeenCalledExactlyOnceWith(url);
   } finally {
-    fetch.mockRestore();
+    await sdb.close();
+  }
+});
+
+test.each([
+  ["<tr><th>City</th><th>Code</th></tr><tr><td>Toronto</td><td>001</td></tr>"],
+  ["<tr><th scope='row'>Toronto</th><td>001</td></tr>"],
+])("loadHtmlTable uses custom column names for %s", async (rows) => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(`<table>${rows}</table>`));
+  const sdb = new SimpleDB();
+  try {
+    const columns = ["name", "id"];
+    const table = sdb.newTable().loadHtmlTable(url, { columns });
+    columns[0] = "changed";
+    expect(await table.getData()).toStrictEqual([{ name: "Toronto", id: "001" }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+test("loadHtmlTable rejects a headerless table without custom column names", async () => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(
+    new Response("<table><tr><td>A</td></tr></table>"),
+  );
+  const sdb = new SimpleDB();
+  try {
+    await expect(sdb.newTable().loadHtmlTable(url).getData()).rejects.toThrow(/options\.columns/);
+  } finally {
+    await sdb.close();
+  }
+});
+
+test.each([
+  { columns: ["onlyOne"], error: /same number of cells/ },
+  { columns: ["name", "Name"], error: /unique/ },
+])("loadHtmlTable rejects invalid custom column names $columns", async ({ columns, error }) => {
+  const html = "<table><tr><td>Toronto</td><td>001</td></tr></table>";
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(html));
+  const sdb = new SimpleDB();
+  try {
+    await expect(sdb.newTable().loadHtmlTable(url, { columns }).getData()).rejects.toThrow(error);
+  } finally {
     await sdb.close();
   }
 });
@@ -54,24 +99,36 @@ test.each([
   ["<table><tr><th>Name</th></tr><tr><td colspan=2>First</td></tr></table>", /merged/],
   ["<table><tr><td><table><tr><td>A</td></tr></table></td></tr></table>", /nested tables/],
 ])("loadHtmlTable rejects unsupported markup in %s", async (html, error) => {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(html));
   const sdb = new SimpleDB();
   try {
-    await expect(sdb.newTable().loadHtmlTable(html).getData()).rejects.toThrow(error);
+    await expect(sdb.newTable().loadHtmlTable(url).getData()).rejects.toThrow(error);
   } finally {
     await sdb.close();
   }
 });
 
+test.each(["<table></table>", "./results.html", "https://", "file:///results.html"])(
+  "loadHtmlTable rejects invalid input %s before fetching",
+  async (input) => {
+    const fetch = vi.spyOn(globalThis, "fetch");
+    const sdb = new SimpleDB();
+    try {
+      expect(() => sdb.newTable().loadHtmlTable(input)).toThrow(/requires an HTTP or HTTPS URL/);
+      expect(fetch).not.toHaveBeenCalled();
+    } finally {
+      await sdb.close();
+    }
+  },
+);
+
 test("loadHtmlTable reports HTTP failures", async () => {
-  const fetch = vi
-    .spyOn(globalThis, "fetch")
-    .mockResolvedValue(new Response(null, { status: 404 }));
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(null, { status: 404 }));
   const sdb = new SimpleDB();
   try {
     const table = sdb.newTable().loadHtmlTable("https://example.com/missing");
     await expect(table.getData()).rejects.toThrow(/Could not fetch the HTML page: 404/);
   } finally {
-    fetch.mockRestore();
     await sdb.close();
   }
 });

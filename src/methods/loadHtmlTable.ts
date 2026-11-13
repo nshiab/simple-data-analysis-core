@@ -17,25 +17,27 @@ const entities: Record<string, string> = {
 
 export default function loadHtmlTable(
   table: SimpleTable,
-  urlOrHtml: string,
-  { index = 0 }: { index?: number } = {},
+  url: string,
+  { index = 0, columns }: { index?: number; columns?: string[] } = {},
 ): void {
   if (!Number.isSafeInteger(index) || index < 0) {
     throw new Error("loadHtmlTable() requires a nonnegative integer table index.");
   }
 
-  const source = urlOrHtml.trim();
-  const url = /^https?:\/\//i.test(source) ? source : undefined;
+  const pageUrl = URL.parse(url);
+  if (pageUrl === null || (pageUrl.protocol !== "http:" && pageUrl.protocol !== "https:")) {
+    throw new Error("loadHtmlTable() requires an HTTP or HTTPS URL.");
+  }
   const method = "loadHtmlTable()";
-  const parameters = { source: url ?? "HTML string", index };
+  const parameters = { url: pageUrl.href, index, columns: columns?.slice() };
   queueOp(table, {
     kind: "barrier",
     method,
     parameters,
     execute: async () => {
       try {
-        const html = url === undefined ? source : await fetchHtml(url);
-        await executePreparedArray(table, parseTable(html, index));
+        const html = await fetchHtml(pageUrl.href);
+        await executePreparedArray(table, parseTable(html, index, parameters.columns));
       } catch (cause) {
         if (cause instanceof SDAError) throw cause;
         throw new SDAError({ method, parameters, query: "", cause });
@@ -56,7 +58,7 @@ function elementPattern(tags: string): RegExp {
   return new RegExp(String.raw`<(${tags})(?=[\s>])(${attributes})>([\s\S]*?)<\/\1\s*>`, "gi");
 }
 
-function parseTable(html: string, index: number) {
+function parseTable(html: string, index: number, columns: string[] | undefined) {
   const page = html.replace(/<!--[\s\S]*?-->/g, "").replace(elementPattern("script|style"), "");
   const table = Array.from(page.matchAll(elementPattern("table")))[index];
   if (table === undefined || /<table(?=[\s>])/i.test(table[3])) {
@@ -65,7 +67,16 @@ function parseTable(html: string, index: number) {
 
   const body = table[3].replace(elementPattern("caption|colgroup"), "").replace(sectionTags, "");
   const rows = readElements(body, "tr", "table rows").map((row) =>
-    readElements(row[3], "th|td", "row cells").map((cell) => {
+    readElements(row[3], "th|td", "row cells"),
+  );
+  const firstRow = rows[0];
+  const hasHeader = firstRow?.length && firstRow.every((cell) => cell[1].toLowerCase() === "th");
+  if (!hasHeader && columns === undefined) {
+    throw new Error("Expected a header row of <th> cells or column names in options.columns.");
+  }
+
+  const values = rows.map((row) =>
+    row.map((cell) => {
       const cellAttributes = cell[2].replace(/"[^"]*"|'[^']*'/g, "");
       if (/\s(?:rowspan|colspan)\s*=/i.test(cellAttributes) || nestedStructure.test(cell[3])) {
         throw new Error("Expected explicitly closed cells without merged or nested cells.");
@@ -74,9 +85,12 @@ function parseTable(html: string, index: number) {
     }),
   );
 
-  const [keys = [], ...data] = rows;
-  if (keys.length === 0 || data.length === 0 || data.some((row) => row.length !== keys.length)) {
-    throw new Error("Expected a header row and data rows with the same number of cells.");
+  const keys = columns ?? values[0];
+  const data = hasHeader ? values.slice(1) : values;
+  if (keys.length === 0 || data.length === 0 || values.some((row) => row.length !== keys.length)) {
+    throw new Error(
+      "Expected at least one data row and the same number of cells as column names in every row.",
+    );
   }
   const names = keys.map((key) => key.replace(/[A-Z]/g, (letter) => letter.toLowerCase()));
   if (keys.some((key) => key === "" || key.includes("\0")) || new Set(names).size !== keys.length) {

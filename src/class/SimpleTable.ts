@@ -681,34 +681,39 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Loads a simple HTML table from a web page or an HTML string. The first row
-   * supplies the column names, and the remaining rows are loaded as strings.
+   * Loads a simple HTML table from a web page. A first row made entirely of
+   * `<th>` cells supplies the column names. Data rows are loaded as strings.
    * Inline tags are removed. Numeric entities and `amp`, `lt`, `gt`, `quot`,
    * `apos`, and `nbsp` are decoded when written with a semicolon.
    *
    * Use rectangular tables with unique, nonempty headers and explicit closing
    * tags for tables, rows, and cells. Nested tables and merged cells are
-   * unsupported. For web pages, the table must be present in the fetched HTML.
+   * unsupported. The table must be present in the fetched HTML.
+   *
+   * Provide `columns` to rename the headers or load a table whose first row
+   * contains data. The number of names must match the number of cells per row.
    *
    * @example
    * ```ts
-   * await table.loadHtmlTable("https://example.com/results", { index: 1 }).log();
+   * await table.loadHtmlTable("https://example.com/results").log();
    * ```
    *
    * @example
    * ```ts
-   * const html = "<table><tr><th>City</th></tr><tr><td>Montréal</td></tr></table>";
-   * await table.loadHtmlTable(html).log();
+   * await table
+   *   .loadHtmlTable("https://example.com/results", { index: 1, columns: ["city", "population"] })
+   *   .log();
    * ```
    *
-   * @param urlOrHtml - An HTTP or HTTPS URL, or the HTML itself.
-   * @param options - Options for choosing the table.
+   * @param url - The HTTP or HTTPS URL of the web page.
+   * @param options - Options for choosing the table and naming its columns.
    * @param options.index - The zero-based table index. Defaults to `0`.
+   * @param options.columns - Custom column names. Required when the table has no header row.
    * @returns The table, so methods can be chained.
    * @category Importing Data
    */
-  loadHtmlTable(urlOrHtml: string, options: { index?: number } = {}): this {
-    loadHtmlTable(this, urlOrHtml, options);
+  loadHtmlTable(url: string, options: { index?: number; columns?: string[] } = {}): this {
+    loadHtmlTable(this, url, options);
     return this;
   }
 
