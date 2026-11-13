@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **logTableNames**(): `Promise`\<[`SimpleDB`](../SimpleDB.md)\<`Table`\>\>
 
-Defined in: src/class/SimpleDB.ts:740
+Defined in: [src/class/SimpleDB.ts:740](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleDB.ts#L740)
 
 Logs the names of all tables in the database to the console, sorted alphabetically.
 

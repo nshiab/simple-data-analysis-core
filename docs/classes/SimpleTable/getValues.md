@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **getValues**(`column`): `Promise`\<`unknown`[]\>
 
-Defined in: src/class/SimpleTable.ts:7345
+Defined in: [src/class/SimpleTable.ts:7399](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L7399)
 
 Returns all values from a specific column.
 Temporal values use the same JavaScript representations as `getData()`.

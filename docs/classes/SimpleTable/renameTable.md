@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **renameTable**(`name`): `Promise`\<[`SimpleTable`](../SimpleTable.md)\>
 
-Defined in: src/class/SimpleTable.ts:359
+Defined in: [src/class/SimpleTable.ts:360](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L360)
 
 Renames the current table.
 The new name must not belong to another registered table, ignoring ASCII letter case.

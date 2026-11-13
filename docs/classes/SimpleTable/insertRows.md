@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **insertRows**(`rows`): `this`
 
-Defined in: src/class/SimpleTable.ts:1468
+Defined in: [src/class/SimpleTable.ts:1522](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L1522)
 
 Inserts rows, provided as an array of JavaScript objects, into the table.
 

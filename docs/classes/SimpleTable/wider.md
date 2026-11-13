@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **wider**(`namesFrom`, `valuesFrom`, `options?`): `this`
 
-Defined in: src/class/SimpleTable.ts:2413
+Defined in: [src/class/SimpleTable.ts:2467](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L2467)
 
 Restructures this table by unstacking (pivoting) values, transforming data from a long format to a wide format.
 

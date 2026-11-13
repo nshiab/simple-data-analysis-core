@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **normalizeString**(`column`, `newColumn`, `options?`): `this`
 
-Defined in: src/class/SimpleTable.ts:7169
+Defined in: [src/class/SimpleTable.ts:7223](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L7223)
 
 Normalizes string values in a column by:
 1. Stripping accents

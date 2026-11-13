@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **reducePrecision**(`decimals`, `options?`): `this`
 
-Defined in: src/class/SimpleTable.ts:8248
+Defined in: [src/class/SimpleTable.ts:8302](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L8302)
 
 Reduces the precision of geometries in a specified column to a given number of decimal places.
 

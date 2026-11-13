@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **getTop**(`count`, `options?`): `Promise`\<`object`[]\>
 
-Defined in: src/class/SimpleTable.ts:7737
+Defined in: [src/class/SimpleTable.ts:7791](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L7791)
 
 Returns the top `n` rows of the table, optionally filtered by SQL conditions.
 With the default `SimpleDB.expressionSyntax: "js"`, conditions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.

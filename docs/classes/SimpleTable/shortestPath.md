@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **shortestPath**(`sourceColumn`, `targetColumn`, `edgeId`, `start`, `end`, `options?`): [`SimpleTable`](../SimpleTable.md)
 
-Defined in: src/class/SimpleTable.ts:4028
+Defined in: [src/class/SimpleTable.ts:4082](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L4082)
 
 Finds the shortest route between two different nodes. If several routes
 tie for shortest, all of them are returned. By default, the shortest

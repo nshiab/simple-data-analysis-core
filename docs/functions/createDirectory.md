@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../index.md)
+[**Simple Data Analysis Core v2.1.24**](../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **createDirectory**(`path`): `void`
 
-Defined in: src/helpers/createDirectory.ts:17
+Defined in: [src/helpers/createDirectory.ts:17](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/helpers/createDirectory.ts#L17)
 
 Creates missing directories in an output path, including parent directories.
 Non-hidden path segments containing a dot are treated as filenames and omitted.

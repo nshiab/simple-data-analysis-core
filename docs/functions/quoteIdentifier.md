@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../index.md)
+[**Simple Data Analysis Core v2.1.24**](../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **quoteIdentifier**(`identifier`): `string`
 
-Defined in: src/helpers/quoteIdentifier.ts:16
+Defined in: [src/helpers/quoteIdentifier.ts:16](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/helpers/quoteIdentifier.ts#L16)
 
 Quotes one SQL identifier and escapes embedded double quotes.
 Use this for library-generated table, column, schema, database, and alias

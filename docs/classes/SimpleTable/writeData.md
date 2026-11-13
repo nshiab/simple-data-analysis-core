@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **writeData**(`file`, `options?`): `Promise`\<[`SimpleTable`](../SimpleTable.md)\>
 
-Defined in: src/class/SimpleTable.ts:9051
+Defined in: [src/class/SimpleTable.ts:9105](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L9105)
 
 Writes the table's data to a file in various formats (CSV, JSON, Parquet, DuckDB, SQLite).
 Tables with geometry columns must use `writeGeoData()` instead.

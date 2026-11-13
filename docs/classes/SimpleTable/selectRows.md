@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **selectRows**(`count`, `options?`): `this`
 
-Defined in: src/class/SimpleTable.ts:1927
+Defined in: [src/class/SimpleTable.ts:1981](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L1981)
 
 Selects a specified number of rows from this table. An offset can be applied to skip initial rows, and the results can be output to a new table.
 

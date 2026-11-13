@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -10,7 +10,7 @@
 
 > **getUniques**(`column`): `Promise`\<`unknown`[]\>
 
-Defined in: src/class/SimpleTable.ts:7640
+Defined in: [src/class/SimpleTable.ts:7694](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L7694)
 
 Returns unique values from a column, or unique combinations from an array of columns,
 without modifying the table. Results are sorted in ascending order by the supplied
@@ -51,7 +51,7 @@ console.log(uniqueYears); // e.g., [{ yearStart: 2020, yearEnd: 2021 }, { yearSt
 
 > **getUniques**(`column`): `Promise`\<`object`[]\>
 
-Defined in: src/class/SimpleTable.ts:7641
+Defined in: [src/class/SimpleTable.ts:7695](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L7695)
 
 Returns unique values from a column, or unique combinations from an array of columns,
 without modifying the table. Results are sorted in ascending order by the supplied
@@ -92,7 +92,7 @@ console.log(uniqueYears); // e.g., [{ yearStart: 2020, yearEnd: 2021 }, { yearSt
 
 > **getUniques**(`column`): `Promise`\<`unknown`[]\>
 
-Defined in: src/class/SimpleTable.ts:7642
+Defined in: [src/class/SimpleTable.ts:7696](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L7696)
 
 Returns unique values from a column, or unique combinations from an array of columns,
 without modifying the table. Results are sorted in ascending order by the supplied

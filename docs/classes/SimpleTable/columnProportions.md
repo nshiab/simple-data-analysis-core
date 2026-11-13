@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **columnProportions**(`column`, `newColumn`, `options?`): `this`
 
-Defined in: src/class/SimpleTable.ts:6166
+Defined in: [src/class/SimpleTable.ts:6220](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L6220)
 
 Computes proportions vertically over a column's values, relative to the sum of all values in that column or group.
 

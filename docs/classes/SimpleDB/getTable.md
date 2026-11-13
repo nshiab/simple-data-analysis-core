@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **getTable**(`name`): `Promise`\<`Table`\>
 
-Defined in: src/class/SimpleDB.ts:623
+Defined in: [src/class/SimpleDB.ts:623](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleDB.ts#L623)
 
 Retrieves an existing SimpleTable instance from the database.
 

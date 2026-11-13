@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **percentChange**(`column`, `reference`, `newColumn`, `options?`): `this`
 
-Defined in: src/class/SimpleTable.ts:6234
+Defined in: [src/class/SimpleTable.ts:6288](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L6288)
 
 Adds a column with the relative change from a reference value for each row.
 The result is `(value - reference) / reference * base`, calculated in double

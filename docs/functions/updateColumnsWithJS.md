@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../index.md)
+[**Simple Data Analysis Core v2.1.24**](../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **updateColumnsWithJS**(`table`, `inputColumns`, `outputColumns`, `generate`, `options?`): `Promise`\<`void`\>
 
-Defined in: src/helpers/updateColumnsWithJS.ts:52
+Defined in: [src/helpers/updateColumnsWithJS.ts:52](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/helpers/updateColumnsWithJS.ts#L52)
 
 Generates columns from selected input columns, keeping other SQL values in
 DuckDB. Call from an asynchronous extension barrier. The callback must return

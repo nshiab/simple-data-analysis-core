@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **paths**(`sourceColumn`, `targetColumn`, `edgeId`, `start`, `end`, `options?`): [`SimpleTable`](../SimpleTable.md)
 
-Defined in: src/class/SimpleTable.ts:4331
+Defined in: [src/class/SimpleTable.ts:4385](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L4385)
 
 Finds all routes between two different nodes. A route cannot visit the
 same node twice, to avoid loops. Different routes can still share the

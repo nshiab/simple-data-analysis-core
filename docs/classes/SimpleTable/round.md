@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **round**(`columns`, `options?`): `this`
 
-Defined in: src/class/SimpleTable.ts:5731
+Defined in: [src/class/SimpleTable.ts:5785](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L5785)
 
 Rounds numeric values in specified columns.
 

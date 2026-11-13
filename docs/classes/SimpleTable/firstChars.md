@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **firstChars**(`column`, `count`): `this`
 
-Defined in: src/class/SimpleTable.ts:5292
+Defined in: [src/class/SimpleTable.ts:5346](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L5346)
 
 Extracts a specific number of characters from the beginning (left side) of string values in the specified column.
 

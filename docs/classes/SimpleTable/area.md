@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **area**(`newColumn`, `options?`): `this`
 
-Defined in: src/class/SimpleTable.ts:8313
+Defined in: [src/class/SimpleTable.ts:8367](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L8367)
 
 Computes the area of geometries in square meters (`"m2"`) or optionally square kilometers (`"km2"`).
 The input geometry is assumed to be in EPSG:4326 (WGS84).

@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.23**](../../index.md)
+[**Simple Data Analysis Core v2.1.24**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **commonNeighbors**(`sourceColumn`, `targetColumn`, `nodeA`, `nodeB`, `options?`): [`SimpleTable`](../SimpleTable.md)
 
-Defined in: src/class/SimpleTable.ts:2992
+Defined in: [src/class/SimpleTable.ts:3046](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L3046)
 
 Finds the neighbors shared by two different nodes. The `direction` option
 lets you find neighbors from source to target, from target to source, or
