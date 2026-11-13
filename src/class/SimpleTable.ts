@@ -99,6 +99,7 @@ import selectColumns from "../methods/selectColumns.ts";
 import sort from "../methods/sort.ts";
 import loadData from "../methods/loadData.ts";
 import loadFilePaths from "../methods/loadFilePaths.ts";
+import loadHtmlTable from "../methods/loadHtmlTable.ts";
 import renameTable from "../methods/renameTable.ts";
 import writeData from "../methods/writeData.ts";
 import getBoundingBox from "../methods/getBoundingBox.ts";
@@ -676,6 +677,38 @@ export default class SimpleTable extends Simple {
    */
   loadFilePaths(patterns: string | string[]): this {
     loadFilePaths(this, patterns);
+    return this;
+  }
+
+  /**
+   * Loads a simple HTML table from a web page or an HTML string. The first row
+   * supplies the column names, and the remaining rows are loaded as strings.
+   * Inline tags are removed. Numeric entities and `amp`, `lt`, `gt`, `quot`,
+   * `apos`, and `nbsp` are decoded when written with a semicolon.
+   *
+   * Use rectangular tables with unique, nonempty headers and explicit closing
+   * tags for tables, rows, and cells. Nested tables and merged cells are
+   * unsupported. For web pages, the table must be present in the fetched HTML.
+   *
+   * @example
+   * ```ts
+   * await table.loadHtmlTable("https://example.com/results", { index: 1 }).log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * const html = "<table><tr><th>City</th></tr><tr><td>Montréal</td></tr></table>";
+   * await table.loadHtmlTable(html).log();
+   * ```
+   *
+   * @param urlOrHtml - An HTTP or HTTPS URL, or the HTML itself.
+   * @param options - Options for choosing the table.
+   * @param options.index - The zero-based table index. Defaults to `0`.
+   * @returns The table, so methods can be chained.
+   * @category Importing Data
+   */
+  loadHtmlTable(urlOrHtml: string, options: { index?: number } = {}): this {
+    loadHtmlTable(this, urlOrHtml, options);
     return this;
   }
 
