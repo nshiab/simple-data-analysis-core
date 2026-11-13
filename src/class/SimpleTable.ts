@@ -689,16 +689,25 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
+   * // Load the first table on the page.
+   * await table.loadHtmlTable("https://example.com/results").log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Load the second table on the page.
    * await table.loadHtmlTable("https://example.com/results", { index: 1 }).log();
    * ```
    *
    * @example
    * ```ts
+   * // Load the table with this HTML ID.
    * await table.loadHtmlTable("https://example.com/results", { id: "results-table" }).log();
    * ```
    *
    * @example
    * ```ts
+   * // Load the second table in the section and name its columns.
    * await table
    *   .loadHtmlTable("https://example.com/results", {
    *     id: "results-section",
