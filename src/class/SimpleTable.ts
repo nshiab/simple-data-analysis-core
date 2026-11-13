@@ -683,8 +683,6 @@ export default class SimpleTable extends Simple {
   /**
    * Loads a simple HTML table from a web page. A first row made entirely of
    * `<th>` cells supplies the column names. Data rows are loaded as strings.
-   * Inline tags are removed. Numeric entities and `amp`, `lt`, `gt`, `quot`,
-   * `apos`, and `nbsp` are decoded when written with a semicolon.
    *
    * Use rectangular tables with unique, nonempty headers and explicit closing
    * tags for tables, rows, and cells. Nested tables and merged cells are
