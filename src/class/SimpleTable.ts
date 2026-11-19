@@ -2621,22 +2621,42 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Adds a new column to the table based on a specified data type (JavaScript or SQL types) and a SQL definition.
-   * With the default `SimpleDB.expressionSyntax: "js"`, expressions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
+   * Adds a column by evaluating `definition` for each row and casting the result to `type`.
    *
-   * For a column with a `STRUCT` type, follow nested field names with dots,
-   * as in `customer.address.city`.
+   * Pass `definition` as a JavaScript string containing a SQL expression.
    *
-   * For a column with a `JSON` type, use `json_extract_string()` to copy a
-   * nested string, such as a city name, into a text column. Use
-   * `json_extract()` with `"JSON"` as the new column type to put a nested array
-   * or object in its own column.
+   * - Wrap text in SQL single quotes, as in `"'pending'"`. Double any apostrophe
+   *   inside the text, as in `"'O''Brien'"`.
+   * - Write a number directly in the expression, as in `"12.5"`.
+   * - Write a boolean as `"TRUE"` or `"FALSE"`.
+   * - Refer to existing columns by name, as in `"price * quantity"`.
+   * - Read a nested field from a `STRUCT` column by joining field names with
+   *   dots, as in `"customer.address.city"`.
+   * - Read a nested string from a `JSON` column with `json_extract_string()`,
+   *   as in `"json_extract_string(customer, '$.address.city')"`. Use
+   *   `json_extract()` with `"JSON"` as the new column type to put a nested
+   *   array or object in its own column.
+   *
+   * With the default `SimpleDB.expressionSyntax: "js"`, expressions support
+   * JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set
+   * `expressionSyntax: "sql"` to pass the expression directly to DuckDB.
    *
    * To get one row per array element or JSON object property, see
    * {@link unnest | unnest()}.
    *
    * Use `await table.getTypes()` to retrieve the column types or
    * `await table.log({ types: true })` to display them alongside the data.
+   *
+   * @example
+   * ```ts
+   * // Add the same text, number, and boolean to every row.
+   * await table
+   *   .loadArray([{ id: 1 }, { id: 2 }])
+   *   .addColumn("name", "string", "'O''Brien'")
+   *   .addColumn("price", "number", "12.5")
+   *   .addColumn("active", "boolean", "TRUE")
+   *   .log();
+   * ```
    *
    * @example
    * ```ts
@@ -2694,7 +2714,7 @@ export default class SimpleTable extends Simple {
    * ```
    * @param newColumn - The name of the new column to be added.
    * @param type - The data type for the new column. Can be a JavaScript type (e.g., `"number"`, `"string"`) or a SQL type (e.g., `"integer"`, `"varchar"`, `"JSON"`, `"FLOAT[3]"`, `"GEOMETRY('EPSG:4326')"`).
-   * @param definition - A SQL expression defining how the values for the new column should be computed (e.g., `"column1 + column2"`, `"ST_Centroid(geom_column)"`).
+   * @param definition - The SQL expression to evaluate for each row, supplied as a JavaScript string.
    * @returns The table, so methods can be chained.
    * @category Column Operations
    */
