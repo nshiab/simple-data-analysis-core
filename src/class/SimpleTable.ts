@@ -5815,6 +5815,7 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
+   * // Chain unnest() calls to expand deeply nested JSON.
    * // First make one row per store, then one row per product in that store.
    * const inventory = {
    *   East: { tea: 7, coffee: 3 },
@@ -5887,36 +5888,48 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Nests (collapses) rows by aggregating a column's values into a single string per group, separated by a delimiter.
+   * Collects a column's values into one DuckDB list per group.
    *
-   * This is the inverse of the delimited-text form of `unnest()`. Multiple rows are combined into fewer rows by grouping on specified category columns and concatenating the target column values with a separator.
+   * Each output row contains the grouping columns and a list in the original
+   * value column. The list keeps the input order, duplicate values, and nulls.
+   * Use {@link unnest | unnest()} to expand the list into rows again.
    *
    * @example
    * ```ts
-   * // Nest 'neighborhoods' column separated by " / " for each city
-   * // Before: [{ city: "Montreal", neighborhoods: "Old Montreal" },
-   * //         { city: "Montreal", neighborhoods: "Chinatown" },
-   * //         { city: "Montreal", neighborhoods: "Griffintown" }]
-   * // After:  [{ city: "Montreal", neighborhoods: "Old Montreal / Chinatown / Griffintown" }]
-   * await table.nest("neighborhoods", " / ", "city").log();
+   * // Team A gets scores [12, 18]. Team B gets [15].
+   * await table
+   *   .loadArray([
+   *     { team: "A", score: 12 },
+   *     { team: "B", score: 15 },
+   *     { team: "A", score: 18 },
+   *   ])
+   *   .nest("score", "team")
+   *   .log();
    * ```
    *
    * @example
    * ```ts
-   * // Nest with multiple category columns
-   * // Before: [{ country: "Canada", city: "Montreal", tags: "red" },
-   * //         { country: "Canada", city: "Montreal", tags: "blue" }]
-   * // After:  [{ country: "Canada", city: "Montreal", tags: "red,blue" }]
-   * await table.nest("tags", ",", ["country", "city"]).log();
+   * // Collect tags for each country and city.
+   * await table
+   *   .loadArray([
+   *     { country: "Canada", city: "Montréal", tag: "red" },
+   *     { country: "Canada", city: "Montréal", tag: "blue" },
+   *   ])
+   *   .nest("tag", ["country", "city"])
+   *   .log();
    * ```
-   * @param column - The name of the column whose values will be aggregated and concatenated.
-   * @param separator - The delimiter string used to join the column values.
-   * @param by - The column name or an array of column names to group by.
+   * @param column - The column containing the values to collect into lists.
+   * @param by - One or more grouping column names, distinct from the value column.
    * @returns The table, so methods can be chained.
    * @category Updating Data
    */
-  nest(column: string, separator: string, by: string | string[]): this {
-    nest(this, column, separator, by);
+  nest(column: string, by: string | string[]): this {
+    if (arguments.length > 2) {
+      throw new TypeError(
+        'nest() takes a column and the grouping columns. Use nest("score", "team").',
+      );
+    }
+    nest(this, column, by);
     return this;
   }
 
