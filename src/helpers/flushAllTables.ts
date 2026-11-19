@@ -50,9 +50,9 @@ export function runExemptFromFlush<T>(sdb: SimpleDB, fn: () => Promise<T>): Prom
  * Executes the pending operations of all tables in program order: every
  * queued operation carries a database-wide sequence number, so operations
  * on different tables replay exactly in the order the user queued them,
- * like immediate execution would. Consecutive fusable operations on the
- * same table compose as CTEs into a single statement; barriers execute
- * in order between fused segments.
+ * like immediate execution would. Operations in a fused segment on the same
+ * table compose as CTEs into a single statement. Barriers and preparation
+ * callbacks against materialized input run between fused segments.
  *
  * Every query execution point goes through this (via queryDB). Only one
  * flush runs at a time: concurrent observers wait for the in-flight flush,
@@ -111,9 +111,10 @@ type CompiledCte = {
   values: import("@duckdb/node-api").DuckDBValue[];
 };
 
-type CompiledOp =
-  | { cte: CompiledCte; schema: TableSchema | null }
-  | (MaterializedInputSelect & { alias: string; values: CompiledCte["values"] });
+type CompiledOp = (
+  | { cte: CompiledCte }
+  | (MaterializedInputSelect & Pick<CompiledCte, "alias" | "values">)
+) & { schema: TableSchema | null };
 
 async function flush(sdb: SimpleDB): Promise<void> {
   // Take ownership of every queue upfront, in program order.
@@ -323,10 +324,6 @@ async function runSegment(table: SimpleTable, ops: RelationalOp[]): Promise<void
     return;
   }
 
-  if (ops.some(needsSpatial)) {
-    await ensureSpatial(table);
-  }
-
   // Normalize each fragment once using the database syntax before composition.
   const ctes: CompiledCte[] = [];
   // The schema of the next fragment's input, reused while operations declare
@@ -360,7 +357,7 @@ async function runSegment(table: SimpleTable, ops: RelationalOp[]): Promise<void
     }
     ctes.length = 0;
     ctes.push(await prepareCte(table, compiled));
-    schema = null;
+    schema = compiled.schema;
     segmentStart = i;
   }
   if (ctes.length > 0) {
@@ -374,6 +371,10 @@ async function compileOp(
   ctes: CompiledCte[],
   schema: TableSchema | null,
 ): Promise<CompiledOp> {
+  if (op.needsSpatial) {
+    await ensureSpatial(table);
+  }
+
   // Source relations can read tables named s1, s2, etc. A generated CTE must
   // not shadow those physical inputs, including in later chain fragments.
   const usedNames = new Set([
@@ -408,7 +409,7 @@ async function compileOp(
           : null;
   const select = op.buildSelect(input, buildSchema);
   if (typeof select !== "string") {
-    return { ...select, alias, values: resolveValues(op, buildSchema) };
+    return { ...select, alias, values: resolveValues(op, buildSchema), schema: outputSchema };
   }
   return {
     cte: {
@@ -466,9 +467,6 @@ async function executeFused(
 }
 
 async function runStepwise(table: SimpleTable, op: RelationalOp): Promise<void> {
-  if (needsSpatial(op)) {
-    await ensureSpatial(table);
-  }
   // Compilation is shared with the fused path, so both paths execute the same
   // cleaned fragment with the same bound values and schema handling.
   const compiled = await compileOp(table, op, [], null);
@@ -499,10 +497,6 @@ async function prepareCte(
       table.sdb.expressionSyntax,
     ),
   };
-}
-
-function needsSpatial(op: RelationalOp): boolean {
-  return op.needsSpatial === true;
 }
 
 function resolveValues(op: FusableOp, schema: TableSchema) {

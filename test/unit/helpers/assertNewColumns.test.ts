@@ -48,7 +48,7 @@ test("assertNewColumns - passes for an empty column list", () => {
 });
 
 test("assertNewColumns can check DuckDB identifier collisions and allow a replaced name", () => {
-  const options = { caseInsensitive: true };
+  const options = { checkDuckDBNameCollisions: true };
   assertNewColumns(schema, ["A"], "unnest()", ["a"], options);
   assertThrows(
     () => assertNewColumns(schema, ["B"], "unnest()", ["a"], options),

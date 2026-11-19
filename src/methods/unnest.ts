@@ -157,7 +157,7 @@ function unnestSelect(
     }
     const key = options.keyColumn ?? "key";
     const value = options.valueColumn ?? "value";
-    assertNewColumns(schema, [key, value], "unnest()", [name], { caseInsensitive: true });
+    assertNewColumns(schema, [key, value], "unnest()", [name], { checkDuckDBNameCollisions: true });
     const jsonColumn = `__sda_source.${column}`;
     const json = `CASE WHEN json_type(${jsonColumn}) <> 'NULL' THEN ${jsonColumn} END`;
     const entries = `LATERAL json_each(${json}) AS __sda_entry`;
@@ -189,7 +189,9 @@ function unnestSelect(
     : list;
   let index = "";
   if (options.indexColumn !== undefined) {
-    assertNewColumns(schema, [options.indexColumn], "unnest()", [], { caseInsensitive: true });
+    assertNewColumns(schema, [options.indexColumn], "unnest()", [], {
+      checkDuckDBNameCollisions: true,
+    });
     // DuckDB pads the position with NULL when the element expression
     // inserts a row for an empty list.
     index = `, generate_subscripts(${list}, 1) AS ${quoteIdentifier(options.indexColumn)}`;

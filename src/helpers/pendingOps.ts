@@ -12,9 +12,9 @@ export type MaterializedInputSelect = {
 };
 
 /**
- * A queued operation that can be expressed as a single SELECT over its input.
- * At flush time, consecutive fusable operations on the same table are
- * composed as CTEs into one statement.
+ * A queued transformation expressed as a SELECT. At flush time, operations
+ * in the same segment compose as CTEs. A preparation callback starts a new
+ * segment after the preceding steps materialize.
  */
 export type FusableOp = {
   kind: "fusable";
@@ -72,8 +72,8 @@ export type FusableOp = {
   outputSchema?: (input: TableSchema) => TableSchema;
   /**
    * Returns a SELECT over `input`, either the quoted table or the previous
-   * CTE alias. Return a preparation callback when the schema requires reading
-   * the materialized input before building the SELECT. The prepared SELECT
+   * CTE alias. Return a preparation callback when the operation needs to
+   * inspect or validate the materialized input. The prepared SELECT
    * can still fuse with downstream operations.
    */
   buildSelect: (input: string, schema: TableSchema) => string | MaterializedInputSelect;

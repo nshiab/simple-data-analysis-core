@@ -15,7 +15,7 @@ import type { TableSchema } from "./pendingOps.ts";
  * @param method - The method name, for the error message (e.g. "cloneColumn()").
  * @param allowInPlace - Columns whose name may already exist because the
  *   operation overwrites them in place rather than adding a new column.
- * @param options.caseInsensitive - Compare names using DuckDB identifier
+ * @param options.checkDuckDBNameCollisions - Compare names using DuckDB identifier
  *   folding and check for collisions among the new names too.
  */
 export default function assertNewColumns(
@@ -23,10 +23,10 @@ export default function assertNewColumns(
   newColumns: string[],
   method: string,
   allowInPlace: string[] = [],
-  options: { caseInsensitive?: boolean } = {},
+  options: { checkDuckDBNameCollisions?: boolean } = {},
 ): void {
   let used: Set<string> | undefined;
-  if (options.caseInsensitive) {
+  if (options.checkDuckDBNameCollisions) {
     const replaceable = new Set(allowInPlace.map(foldIdentifier));
     used = new Set(
       Object.keys(schema)

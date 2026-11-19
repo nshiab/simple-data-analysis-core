@@ -144,6 +144,30 @@ test("should validate the filtered input before fusing JSON expansion with later
   }
 });
 
+test("should report invalid JSON before initializing a later spatial operation", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("invalidJson");
+    const queries = spyOnQueries(table);
+    await expect(
+      table
+        .loadArray(
+          [
+            { item: [1], lat: 15, lon: 40 },
+            { item: { a: 1 }, lat: 15, lon: 40 },
+          ],
+          { columnTypes: { item: "JSON" } },
+        )
+        .unnest("item")
+        .createPoints("lat", "lon", "geometry")
+        .run(),
+    ).rejects.toThrow("requires JSON arrays. Found JSON type OBJECT.");
+    expect(queries.some((query) => query.includes("INSTALL spatial"))).toBe(false);
+  } finally {
+    await sdb.close();
+  }
+});
+
 test("should compose supported loadData table functions as sources", async () => {
   const sdb = new SimpleDB();
   const cases = [
