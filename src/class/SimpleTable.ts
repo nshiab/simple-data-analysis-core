@@ -5717,6 +5717,9 @@ export default class SimpleTable extends Simple {
    * Other columns are copied onto each output row. An empty or null list, array,
    * or object produces zero rows by default.
    *
+   * With `loadArray()`, declare `JSON` for variable-length arrays or
+   * `FLOAT[n]` for fixed-size float arrays.
+   *
    * A JSON column must contain arrays or objects of a single shape. The first non-null
    * value determines the shape by default, and an empty or all-null column uses the
    * array shape. A key or value column name selects the object shape. An index column
@@ -5734,9 +5737,17 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Expand a DuckDB list. Team A gets two rows with scores 12 and 18.
-   * await sdb.customQuery("CREATE TABLE results AS SELECT 'A' AS team, [12, 18] AS scores");
-   * await sdb.newTable("results").unnest("scores").log();
+   * // Expand JSON arrays of different lengths. Team A gets two rows, and team B gets one.
+   * await table
+   *   .loadArray(
+   *     [
+   *       { team: "A", scores: [12, 18] },
+   *       { team: "B", scores: [15] },
+   *     ],
+   *     { columnTypes: { scores: "JSON" } },
+   *   )
+   *   .unnest("scores")
+   *   .log();
    * ```
    *
    * @example
