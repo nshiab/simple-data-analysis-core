@@ -2625,14 +2625,16 @@ export default class SimpleTable extends Simple {
    *
    * Pass `definition` as a JavaScript string containing a SQL expression.
    *
-   * - Wrap text in SQL single quotes, as in `"'pending'"`. Double any apostrophe
-   *   inside the text, as in `"'O''Brien'"`.
-   * - Write a number directly in the expression, as in `"12.5"`.
-   * - Write a boolean as `"TRUE"` or `"FALSE"`.
-   * - Refer to existing columns by name, as in `"price * quantity"`.
-   * - Read a nested field from a `STRUCT` column by joining field names with
-   *   dots, as in `"customer.address.city"`.
-   * - Read a nested string from a `JSON` column with `json_extract_string()`,
+   * - To add a string, wrap the value in SQL single quotes, as in
+   *   `"'pending'"`. Double any apostrophe inside the value, as in `"'O''Brien'"`.
+   * - To add a number, put the number directly inside the JavaScript string,
+   *   as in `"12.5"`.
+   * - To add a boolean, use `"TRUE"` or `"FALSE"`.
+   * - To add a value calculated from other columns, refer to those columns by
+   *   name, as in `"price * quantity"`.
+   * - To add a value from a `STRUCT` column, join the field names with dots,
+   *   as in `"customer.address.city"`.
+   * - To add a value from a `JSON` column, use `json_extract_string()` for text,
    *   as in `"json_extract_string(customer, '$.address.city')"`. Use
    *   `json_extract()` with `"JSON"` as the new column type to put a nested
    *   array or object in its own column.
