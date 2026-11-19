@@ -538,18 +538,16 @@ async function describeChain(
   try {
     return extractTypes(await queryDB(table, query, options));
   } catch (error) {
-    // Raw SQL in an earlier fragment may need the spatial extension when
-    // DuckDB binds the chain. Load it here only if the chain also requests it.
-    if (
-      !spatialRequested ||
-      table.sdb.spatialLoaded ||
-      !(error instanceof SDAError) ||
-      !(error.cause instanceof Error) ||
-      !error.cause.message.includes("Please try installing and loading the spatial extension:")
-    ) {
+    // DuckDB may need spatial functions or types to bind an earlier SQL
+    // fragment. Retry when a pending operation already requests spatial.
+    if (!spatialRequested || table.sdb.spatialLoaded || !(error instanceof SDAError)) {
       throw error;
     }
-    await ensureSpatial(table);
+    try {
+      await ensureSpatial(table);
+    } catch {
+      throw error;
+    }
     return extractTypes(await queryDB(table, query, options));
   }
 }

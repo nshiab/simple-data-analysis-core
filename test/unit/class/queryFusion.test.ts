@@ -168,23 +168,42 @@ test("should report invalid JSON before initializing a later spatial operation",
   }
 });
 
-test("should load requested spatial support when earlier SQL needs it to resolve its schema", async () => {
-  const sdb = new SimpleDB();
-  try {
-    await sdb.customQuery("SET autoload_known_extensions = false");
-    const table = sdb
-      .newTable()
-      .loadArray([{ lon: 40, lat: 15, n: 2 }])
-      .addColumn("x", "number", "ST_X(ST_Point(lon, lat))")
-      .repeatRows("n")
-      .convert({ x: "integer" })
-      .createPoints("lat", "x", "geom");
-    expect(await table.getTypes()).toMatchObject({ x: "INTEGER", geom: "GEOMETRY('EPSG:4326')" });
-    expect(await table.getRowCount()).toBe(2);
-  } finally {
-    await sdb.close();
-  }
-});
+test.each([
+  {
+    definition: "ST_X(ST_Point(lon, lat))",
+    type: "number",
+    conversion: "integer",
+    expected: "INTEGER",
+  },
+  {
+    definition: "CAST({'x': lon, 'y': lat} AS POINT_2D)",
+    type: "string",
+    conversion: "string",
+    expected: "VARCHAR",
+  },
+] as const)(
+  "should load requested spatial support when earlier SQL uses $definition",
+  async ({ definition, type, conversion, expected }) => {
+    const sdb = new SimpleDB();
+    try {
+      await sdb.customQuery("SET autoload_known_extensions = false");
+      const table = sdb
+        .newTable()
+        .loadArray([{ lon: 40, lat: 15, n: 2 }])
+        .addColumn("value", type, definition)
+        .repeatRows("n")
+        .convert({ value: conversion })
+        .createPoints("lat", "lon", "geom");
+      expect(await table.getTypes()).toMatchObject({
+        value: expected,
+        geom: "GEOMETRY('EPSG:4326')",
+      });
+      expect(await table.getRowCount()).toBe(2);
+    } finally {
+      await sdb.close();
+    }
+  },
+);
 
 test("should compose supported loadData table functions as sources", async () => {
   const sdb = new SimpleDB();
