@@ -1,5 +1,6 @@
 import foldIdentifier from "../helpers/foldIdentifier.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
+import parseValue from "../helpers/parseValue.ts";
 import queryDB from "../helpers/queryDB.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import queueOp from "../helpers/queueOp.ts";
@@ -7,55 +8,43 @@ import type { TableSchema } from "../helpers/pendingOps.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
 type UnnestOptions = {
+  separator?: string;
   keyColumn?: string;
   valueColumn?: string;
   indexColumn?: string;
   keepEmpty?: boolean;
 };
 
-type Shape = "array" | "object";
+type Format = "text" | "array" | "object";
 
 export default function unnest(
   simpleTable: SimpleTable,
   column: string,
-  separatorOrOptions: string | UnnestOptions = {},
+  options: UnnestOptions = {},
 ) {
-  if (typeof separatorOrOptions === "string") {
-    queueOp(simpleTable, {
-      kind: "fusable",
-      method: "unnest()",
-      parameters: { column, separator: separatorOrOptions },
-      values: [separatorOrOptions],
-      needsSchema: false,
-      buildSelect: (input) =>
-        `SELECT
-  * EXCLUDE ${quoteIdentifier(column)},
-  TRIM(UNNEST(SPLIT(${quoteIdentifier(column)}, ?))) AS ${quoteIdentifier(column)}
-FROM ${input}`,
-    });
-    return;
+  if (typeof column !== "string" || column.length === 0) {
+    throw new TypeError("unnest() column must be a non-empty string.");
   }
 
-  const options = { ...separatorOrOptions };
+  if (options === null || typeof options !== "object" || Array.isArray(options)) {
+    throw new TypeError(
+      'unnest() options must be an object. Pass a text separator as { separator: "," }.',
+    );
+  }
+
+  options = { ...options };
+  const format = requestedFormat(options);
   const parameters = { column, options };
-  const objectOptions = options.keyColumn !== undefined || options.valueColumn !== undefined;
-  if (objectOptions && options.indexColumn !== undefined) {
-    throw new Error("unnest() indexColumn cannot be used with keyColumn or valueColumn.");
-  }
-
-  const shape: Shape | undefined = objectOptions
-    ? "object"
-    : options.indexColumn === undefined
-      ? undefined
-      : "array";
-  if (shape !== undefined) {
+  const { separator } = options;
+  if (format !== undefined) {
     queueOp(simpleTable, {
       kind: "fusable",
       method: "unnest()",
       parameters,
+      values: separator === undefined ? undefined : [separator],
       needsSchema: true,
       buildSelect: (input, schema) =>
-        unnestSelect(input, schema, findColumn(schema, column), shape, options),
+        unnestSelect(input, schema, findColumn(schema, column), format, options),
     });
     return;
   }
@@ -75,7 +64,7 @@ FROM ${input}`,
         method: "unnest()",
         parameters,
       });
-      let shape: Shape = "array";
+      let format: Format = "array";
       if (source.type === "JSON") {
         const jsonType = `json_type(${quoteIdentifier(source.name)})`;
         const rows = await queryDB(
@@ -83,19 +72,63 @@ FROM ${input}`,
           `SELECT ${jsonType} AS shape FROM ${input} WHERE ${jsonType} <> 'NULL' LIMIT 1`,
           { ...queryOptions, returnData: true },
         );
-        shape = rows?.[0]?.shape === "OBJECT" ? "object" : "array";
+        const shape = rows?.[0]?.shape;
+        if (shape === "OBJECT") {
+          format = "object";
+        } else if (typeof shape === "string" && shape !== "ARRAY") {
+          throw new Error(
+            `unnest() column ${quoteIdentifier(source.name)} contains JSON type ${shape}. Use a JSON column containing arrays or objects.`,
+          );
+        }
       }
-      const select = unnestSelect(input, schema, source, shape, options);
+      const select = unnestSelect(input, schema, source, format, options);
       await queryDB(simpleTable, `CREATE OR REPLACE TABLE ${input} AS ${select}`, queryOptions);
     },
   });
+}
+
+function requestedFormat(options: UnnestOptions): Format | undefined {
+  const { separator, keyColumn, valueColumn, indexColumn, keepEmpty } = options;
+  if (separator !== undefined && typeof separator !== "string") {
+    throw new TypeError("unnest() options.separator must be a string.");
+  }
+  for (const option of ["keyColumn", "valueColumn", "indexColumn"] as const) {
+    const name = options[option];
+    if (name !== undefined && (typeof name !== "string" || name.length === 0)) {
+      throw new TypeError(`unnest() options.${option} must be a non-empty column name.`);
+    }
+  }
+  if (keepEmpty !== undefined && typeof keepEmpty !== "boolean") {
+    throw new TypeError("unnest() options.keepEmpty must be true or false.");
+  }
+
+  const objectOptions = keyColumn !== undefined || valueColumn !== undefined;
+  if (separator !== undefined) {
+    if (objectOptions || indexColumn !== undefined || keepEmpty !== undefined) {
+      throw new Error(
+        "unnest() use options.separator by itself to split text. Remove the other unnest options.",
+      );
+    }
+    return "text";
+  }
+  if (indexColumn !== undefined) {
+    if (objectOptions) {
+      throw new Error(
+        "unnest() use options.indexColumn for arrays and lists. Use options.keyColumn or options.valueColumn for JSON objects. Choose the options for one input shape.",
+      );
+    }
+    return "array";
+  }
+  return objectOptions ? "object" : undefined;
 }
 
 function findColumn(schema: TableSchema, column: string): { name: string; type: string } {
   const folded = foldIdentifier(column);
   const match = Object.entries(schema).find(([name]) => foldIdentifier(name) === folded);
   if (match === undefined) {
-    throw new Error(`unnest() the column ${quoteIdentifier(column)} does not exist.`);
+    throw new Error(
+      `unnest() column ${quoteIdentifier(column)} does not exist. Check the column name.`,
+    );
   }
   const [name, type] = match;
   return { name, type };
@@ -105,21 +138,31 @@ function unnestSelect(
   input: string,
   schema: TableSchema,
   source: { name: string; type: string },
-  shape: Shape,
+  format: Format,
   options: UnnestOptions,
 ): string {
   const { name, type } = source;
   const column = quoteIdentifier(name);
-  if (shape === "object") {
+  const typeError = `unnest() column ${column} has type ${type}.`;
+  if (format === "text") {
+    if (type !== "VARCHAR") {
+      throw new Error(
+        `${typeError} options.separator requires a string (VARCHAR) column. Choose a string column or omit the separator to expand a list, array, or JSON object.`,
+      );
+    }
+    return `SELECT * EXCLUDE (${column}), TRIM(UNNEST(SPLIT(${column}, ?))) AS ${column} FROM ${input}`;
+  }
+
+  if (format === "object") {
     if (type !== "JSON") {
       throw new Error(
-        `unnest() ${column} has type ${type}. keyColumn and valueColumn require a JSON object column.`,
+        `${typeError} options.keyColumn and options.valueColumn require a JSON object column. Remove them to expand a list or array.`,
       );
     }
     const key = options.keyColumn ?? "key";
     const value = options.valueColumn ?? "value";
     assertOutputColumns(schema, [key, value], name);
-    const json = requireJsonShape(`__sda_source.${column}`, "object");
+    const json = requireJsonShape(`__sda_source.${column}`, column, "object");
     const entries = `LATERAL json_each(${json}) AS __sda_entry`;
     const join = options.keepEmpty ? `LEFT JOIN ${entries} ON TRUE` : `CROSS JOIN ${entries}`;
     return `SELECT __sda_source.* EXCLUDE (${column}), __sda_entry.key AS ${quoteIdentifier(key)},
@@ -128,14 +171,18 @@ function unnestSelect(
   }
 
   if (type !== "JSON" && !/\[\d*\]$/.test(type)) {
-    throw new Error(
-      `unnest() ${column} has type ${type}. Use a list, array, JSON column, or a delimiter for text.`,
-    );
+    const expected =
+      options.indexColumn !== undefined
+        ? "options.indexColumn requires a DuckDB list, fixed-size array, or JSON array."
+        : options.keepEmpty !== undefined
+          ? "options.keepEmpty requires a list, array, or JSON object."
+          : "Choose a list, array, or JSON object.";
+    throw new Error(`${typeError} ${expected} To split text, use options.separator by itself.`);
   }
 
   let list = column;
   if (type === "JSON") {
-    list = `CAST(${requireJsonShape(column, "array")} AS JSON[])`;
+    list = `CAST(${requireJsonShape(column, column, "array")} AS JSON[])`;
   } else if (!type.endsWith("[]")) {
     // Slicing a fixed-size array gives a list and preserves SQL NULLs.
     list = `list_slice(${column}, 1, -1)`;
@@ -170,10 +217,12 @@ function assertOutputColumns(schema: TableSchema, columns: string[], excluded?: 
   }
 }
 
-function requireJsonShape(column: string, shape: Shape): string {
-  return `CASE COALESCE(json_type(${column}), 'NULL')
-    WHEN '${shape.toUpperCase()}' THEN ${column}
+function requireJsonShape(expression: string, column: string, shape: "array" | "object"): string {
+  const prefix = parseValue(`unnest() column ${column} requires JSON ${shape}s. Found JSON type `);
+  return `CASE COALESCE(json_type(${expression}), 'NULL')
+    WHEN '${shape.toUpperCase()}' THEN ${expression}
     WHEN 'NULL' THEN NULL
-    ELSE error('unnest() expected a JSON ${shape}. The column must contain one shape.')
+    ELSE error(CONCAT(${prefix}, json_type(${expression}),
+      '. Use one JSON shape per column. options.indexColumn applies to arrays. options.keyColumn and options.valueColumn apply to objects.'))
   END`;
 }

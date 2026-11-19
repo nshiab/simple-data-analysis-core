@@ -8,7 +8,7 @@ test("should unnest rows based on a specific column values", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
   table.loadData("test/data/files/nestedData.csv");
-  table.unnest("neighbourhoods", " / ");
+  table.unnest("neighbourhoods", { separator: " / " });
 
   const data = await table.getData();
 
@@ -32,7 +32,7 @@ test("should bind an unnesting separator containing an apostrophe", async () => 
   const table = sdb.newTable("boundUnnest");
 
   table.loadArray([{ group: "a", value: "rock'n'roll" }]);
-  table.unnest("value", "'n'");
+  table.unnest("value", { separator: "'n'" });
 
   expect(await table.getData()).toStrictEqual([
     { group: "a", value: "rock" },
@@ -201,26 +201,134 @@ test("expands train keys and stops from a compressed JSON snapshot", async () =>
   }
 });
 
-test.each([[[], {}], [{}, []], [12]])(
-  "rejects mixed shapes and scalar JSON (%j, %j)",
-  async (...items) => {
-    const sdb = new SimpleDB();
-    try {
-      const table = sdb
-        .newTable()
-        .loadArray(
-          items.map((item) => ({ item })),
-          {
-            columnTypes: { item: "JSON" },
-          },
-        )
-        .unnest("item");
-      await expect(table.run()).rejects.toThrow(/unnest\(\) expected a JSON (array|object)/);
-    } finally {
-      await sdb.close();
-    }
+test.each([
+  {
+    items: [[], {}],
+    options: {},
+    hint: 'column "item" requires JSON arrays. Found JSON type OBJECT.',
   },
-);
+  {
+    items: [{}, []],
+    options: {},
+    hint: 'column "item" requires JSON objects. Found JSON type ARRAY.',
+  },
+  {
+    items: [12],
+    options: {},
+    hint: 'column "item" contains JSON type UBIGINT. Use a JSON column containing arrays or objects.',
+  },
+  {
+    items: [[]],
+    options: { keyColumn: "key" },
+    hint: "Found JSON type ARRAY. Use one JSON shape per column.",
+  },
+  {
+    items: [[]],
+    options: { valueColumn: "value" },
+    hint: 'column "item" requires JSON objects.',
+  },
+  {
+    items: [{}],
+    options: { indexColumn: "position" },
+    hint: 'column "item" requires JSON arrays. Found JSON type OBJECT.',
+  },
+])("rejects incompatible JSON shapes for $items and $options", async ({ items, options, hint }) => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb
+      .newTable()
+      .loadArray(
+        items.map((item) => ({ item })),
+        {
+          columnTypes: { item: "JSON" },
+        },
+      )
+      .unnest("item", options);
+    await expect(table.run()).rejects.toThrow(hint);
+  } finally {
+    await sdb.close();
+  }
+});
+
+test.each([
+  { options: {}, hint: "To split text, use options.separator by itself." },
+  { options: { separator: "," }, hint: "options.separator requires a string (VARCHAR) column." },
+  {
+    options: { keyColumn: "key" },
+    hint: "options.keyColumn and options.valueColumn require a JSON object column.",
+  },
+  {
+    options: { valueColumn: "value" },
+    hint: "options.keyColumn and options.valueColumn require a JSON object column.",
+  },
+  {
+    options: { indexColumn: "position" },
+    hint: "options.indexColumn requires a DuckDB list, fixed-size array, or JSON array.",
+  },
+  {
+    options: { keepEmpty: true },
+    hint: "options.keepEmpty requires a list, array, or JSON object.",
+  },
+])("reports the column type and expected input for $options", async ({ options, hint }) => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb
+      .newTable()
+      .loadArray([{ item: 12 }])
+      .unnest("item", options);
+    const result = table.run();
+    await expect(result).rejects.toThrow('unnest() column "item" has type DOUBLE.');
+    await expect(result).rejects.toThrow(hint);
+  } finally {
+    await sdb.close();
+  }
+});
+
+test.each([
+  { options: ",", hint: 'Pass a text separator as { separator: "," }.' },
+  { options: { separator: 3 }, hint: "options.separator must be a string." },
+  { options: { keyColumn: "" }, hint: "options.keyColumn must be a non-empty column name." },
+  { options: { valueColumn: true }, hint: "options.valueColumn must be a non-empty column name." },
+  { options: { indexColumn: 3 }, hint: "options.indexColumn must be a non-empty column name." },
+  { options: { keepEmpty: "true" }, hint: "options.keepEmpty must be true or false." },
+  { options: { separator: ",", keepEmpty: true }, hint: "use options.separator by itself" },
+  { options: { separator: ",", keyColumn: "key" }, hint: "use options.separator by itself" },
+  { options: { separator: ",", valueColumn: "value" }, hint: "use options.separator by itself" },
+  { options: { separator: ",", indexColumn: "position" }, hint: "use options.separator by itself" },
+  {
+    options: { keyColumn: "key", indexColumn: "position" },
+    hint: "Choose the options for one input shape.",
+  },
+  {
+    options: { valueColumn: "value", indexColumn: "position" },
+    hint: "Choose the options for one input shape.",
+  },
+])("rejects invalid options $options when called", async ({ options, hint }) => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable();
+    expect(() =>
+      table.unnest("item", options as unknown as Parameters<typeof table.unnest>[1]),
+    ).toThrow(hint);
+  } finally {
+    await sdb.close();
+  }
+});
+
+test("reports a missing column before expanding it", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb
+      .newTable()
+      .loadArray([{ item: "a,b" }])
+      .unnest("missing", { separator: "," });
+    await expect(table.run()).rejects.toThrow(
+      'column "missing" does not exist. Check the column name.',
+    );
+  } finally {
+    await sdb.close();
+  }
+});
 
 test("rejects output names that would collide with another column", async () => {
   const sdb = new SimpleDB();

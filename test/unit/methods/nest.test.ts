@@ -81,7 +81,7 @@ test("should work as inverse of unnest (round-trip test)", async () => {
   table.loadArray(originalData);
 
   // Unnest to expand rows
-  table.unnest("neighborhoods", " / ");
+  table.unnest("neighborhoods", { separator: " / " });
 
   const unnested = await table.getData();
   expect(unnested.length).toStrictEqual(9); // 3 rows expanded to 9

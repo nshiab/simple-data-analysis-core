@@ -5710,7 +5710,8 @@ export default class SimpleTable extends Simple {
    * Expands delimited text, DuckDB lists and fixed-size arrays, and JSON arrays
    * and objects into rows.
    *
-   * With a delimiter, each trimmed substring replaces the original string in its own row.
+   * Set `options.separator` to split a string column. Each trimmed substring
+   * replaces the original string in its own row.
    * For lists and arrays, each element replaces the original value in its own row.
    * For JSON objects, each top-level property produces a row with a string key and a
    * JSON value. The key and value columns replace the original object column.
@@ -5735,7 +5736,7 @@ export default class SimpleTable extends Simple {
    * // The tags values are "red" and "blue".
    * await table
    *   .loadArray([{ id: 1, tags: "red, blue" }])
-   *   .unnest("tags", ",")
+   *   .unnest("tags", { separator: "," })
    *   .log();
    * ```
    *
@@ -5834,26 +5835,27 @@ export default class SimpleTable extends Simple {
    *   .log();
    * ```
    * @param column - The name of the column to expand.
-   * @param separatorOrOptions - A delimiter string for text, or optional settings for lists and JSON.
-   * @param separatorOrOptions.keyColumn - The output column for JSON object keys. Defaults to `"key"`.
-   * @param separatorOrOptions.valueColumn - The output column for JSON object values. Defaults to `"value"`.
-   * @param separatorOrOptions.indexColumn - An optional output column for the one-based position within each list or array.
-   * @param separatorOrOptions.keepEmpty - Emit one row with null outputs for each empty or null list, array, or object. Defaults to `false`.
+   * @param options - Settings for expanding the column. Defaults to `{}`.
+   * @param options.separator - The delimiter for splitting a string column. Use this option by itself.
+   * @param options.keyColumn - The output column for JSON object keys. Defaults to `"key"`.
+   * @param options.valueColumn - The output column for JSON object values. Defaults to `"value"`.
+   * @param options.indexColumn - An optional output column for the one-based position within each list or array.
+   * @param options.keepEmpty - Emit one row with null outputs for each empty or null list, array, or object. Defaults to `false`.
    * @returns The table, so methods can be chained.
+   * @throws If options conflict, the column is missing or incompatible with the options, the JSON shapes differ, or output names collide.
    * @category Updating Data
    */
   unnest(
     column: string,
-    separatorOrOptions:
-      | string
-      | {
-          keyColumn?: string;
-          valueColumn?: string;
-          indexColumn?: string;
-          keepEmpty?: boolean;
-        } = {},
+    options: {
+      separator?: string;
+      keyColumn?: string;
+      valueColumn?: string;
+      indexColumn?: string;
+      keepEmpty?: boolean;
+    } = {},
   ): this {
-    unnest(this, column, separatorOrOptions);
+    unnest(this, column, options);
     return this;
   }
 
