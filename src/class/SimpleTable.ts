@@ -5682,13 +5682,15 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Expands a delimited string, list, JSON array, or JSON object into rows.
+   * Expands delimited text, DuckDB lists and fixed-size arrays, and JSON arrays
+   * and objects into rows.
    *
    * With a delimiter, each trimmed substring replaces the original string in its own row.
    * For lists and arrays, each element replaces the original value in its own row.
    * For JSON objects, each top-level property produces a row with a string key and a
    * JSON value. The key and value columns replace the original object column.
-   * Other columns are copied onto each output row.
+   * Other columns are copied onto each output row. An empty or null list, array,
+   * or object produces zero rows by default.
    *
    * A JSON column must contain arrays or objects of a single shape. The first non-null
    * value determines the shape by default, and an empty or all-null column uses the
@@ -5697,43 +5699,76 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Unnest 'tags' column separated by commas
-   * // Before: [{ id: 1, tags: "red,blue,green" }]
-   * // After:  [{ id: 1, tags: "red" }, { id: 1, tags: "blue" }, { id: 1, tags: "green" }]
-   * await table.unnest("tags", ",").log();
-   * ```
-   *
-   * @example
-   * ```ts
-   * // Unnest 'neighborhoods' column separated by " / "
-   * // Before: [{ city: "Montreal", neighborhoods: "Old Montreal / Chinatown / Griffintown" }]
-   * // After:  [{ city: "Montreal", neighborhoods: "Old Montreal" },
-   * //         { city: "Montreal", neighborhoods: "Chinatown" },
-   * //         { city: "Montreal", neighborhoods: "Griffintown" }]
-   * await table.unnest("neighborhoods", " / ").log();
-   * ```
-   *
-   * @example
-   * ```ts
-   * // Keep each stop's position within the train's list of stops.
+   * // Split text on commas and trim the pieces. Both rows keep id 1.
+   * // The tags values are "red" and "blue".
    * await table
-   *   .loadArray([{ train: "101", stops: ["Jasper", "Edmonton"] }], {
-   *     columnTypes: { stops: "JSON" },
-   *   })
-   *   .unnest("stops", { indexColumn: "stopNumber" })
+   *   .loadArray([{ id: 1, tags: "red, blue" }])
+   *   .unnest("tags", ",")
    *   .log();
    * ```
    *
    * @example
    * ```ts
-   * // Turn the root train keys in a compressed JSON snapshot into rows.
+   * // Expand a DuckDB list. Team A gets two rows with scores 12 and 18.
+   * await sdb.customQuery("CREATE TABLE results AS SELECT 'A' AS team, [12, 18] AS scores");
+   * await sdb.newTable("results").unnest("scores").log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Expand a fixed-size array. Station A gets a row for each reading.
    * await table
-   *   .loadData("01_10.json.gz", { records: false, columnTypes: { snapshot: "JSON" } })
-   *   .unnest("snapshot", { keyColumn: "trainKey", valueColumn: "train" })
-   *   .addColumn("times", "JSON", "json_extract(train, '$.times')")
-   *   .unnest("times", { indexColumn: "stopNumber" })
-   *   .addColumn("station", "string", "json_extract_string(times, '$.station')")
-   *   .sort({ trainKey: "asc", stopNumber: "asc" })
+   *   .loadArray([{ station: "A", readings: [18.5, 20.5] }], {
+   *     columnTypes: { readings: "FLOAT[2]" },
+   *   })
+   *   .unnest("readings")
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Expand a JSON array and number its elements starting at 1.
+   * // Order 1 gets two rows. Orders 2 and 3 each get a row with null items and itemNumber.
+   * await table
+   *   .loadArray(
+   *     [
+   *       { orderId: 1, items: [{ name: "tea" }, { name: "coffee" }] },
+   *       { orderId: 2, items: [] },
+   *       { orderId: 3, items: null },
+   *     ],
+   *     { columnTypes: { items: "JSON" } },
+   *   )
+   *   .unnest("items", { indexColumn: "itemNumber", keepEmpty: true })
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Expand a JSON object. The key and value columns replace inventory.
+   * // The rows have key "coffee" with value 3 and key "tea" with value 7.
+   * await table
+   *   .loadArray([{ store: "East", inventory: { tea: 7, coffee: 3 } }], {
+   *     columnTypes: { inventory: "JSON" },
+   *   })
+   *   .unnest("inventory")
+   *   .sort({ key: "asc" })
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Name the key and value columns product and stock.
+   * // Store West stays in the result with null product and stock.
+   * await table
+   *   .loadArray(
+   *     [
+   *       { store: "East", inventory: { tea: 7 } },
+   *       { store: "West", inventory: {} },
+   *     ],
+   *     { columnTypes: { inventory: "JSON" } },
+   *   )
+   *   .unnest("inventory", { keyColumn: "product", valueColumn: "stock", keepEmpty: true })
+   *   .sort({ store: "asc" })
    *   .log();
    * ```
    * @param column - The name of the column to expand.
