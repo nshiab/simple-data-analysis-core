@@ -5815,14 +5815,19 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // The first call makes one row per round of scores.
-   * // The second makes one row per score. Team A gets scores 12, 18, and 15.
+   * // First make one row per store, then one row per product in that store.
+   * const inventory = {
+   *   East: { tea: 7, coffee: 3 },
+   *   West: { tea: 2 },
+   * };
+   *
    * await table
-   *   .loadArray([{ team: "A", scores: [[12, 18], [15]] }], {
-   *     columnTypes: { scores: "JSON" },
+   *   .loadArray([{ inventory }], {
+   *     columnTypes: { inventory: "JSON" },
    *   })
-   *   .unnest("scores")
-   *   .unnest("scores")
+   *   .unnest("inventory", { keyColumn: "store", valueColumn: "products" })
+   *   .unnest("products", { keyColumn: "product", valueColumn: "stock" })
+   *   .sort({ store: "asc", product: "asc" })
    *   .log();
    * ```
    * @param column - The name of the column to expand.
