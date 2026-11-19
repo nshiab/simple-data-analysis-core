@@ -2623,8 +2623,15 @@ export default class SimpleTable extends Simple {
   /**
    * Adds a new column to the table based on a specified data type (JavaScript or SQL types) and a SQL definition.
    * With the default `SimpleDB.expressionSyntax: "js"`, expressions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
-   * Use dot notation for fields in an inferred DuckDB struct. For a `JSON` column,
-   * use `json_extract_string()` for unquoted text or `json_extract()` to keep a nested value as JSON.
+   *
+   * Check the column type with `log({ types: true })`. A column with a `STRUCT` type
+   * shows `STRUCT(...)/object`. Follow its field names with dots, as in
+   * `customer.address.city`.
+   *
+   * A column with a `JSON` type shows `JSON/string`. Use `json_extract_string()`
+   * to copy a nested string, such as a city name, into a text column. Use
+   * `json_extract()` with `"JSON"` as the new column type to put a nested array
+   * or object in its own column. You can then expand that column with `unnest()`.
    *
    * @example
    * ```ts
@@ -2640,21 +2647,37 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Extract a city and keep an array from a nested JSON column.
-   * await table.loadArray([{ customer: { address: { city: "Montréal" }, tags: ["member"] } }], {
-   *   columnTypes: { customer: "JSON" },
-   * })
-   *   .addColumn("city", "string", "json_extract_string(customer, '$.address.city')")
-   *   .addColumn("tags", "JSON", "json_extract(customer, '$.tags')")
-   *   .log();
+   * // orders.json contains [{"customer":{"address":{"city":"Montréal"}}}].
+   * // The customer column shows STRUCT(address STRUCT(city VARCHAR))/object.
+   * // The new city column shows VARCHAR/string and contains Montréal.
+   * await table
+   *   .loadData("orders.json")
+   *   .addColumn("city", "string", "customer.address.city")
+   *   .log({ types: true });
    * ```
    *
    * @example
    * ```ts
-   * // Read the same nested field when loadData() infers customer as a struct.
-   * await table.loadData("orders.json")
-   *   .addColumn("city", "string", "customer.address.city")
-   *   .log();
+   * // Read the city name from a JSON column into a text column.
+   * // The new city column shows VARCHAR/string and contains Montréal.
+   * await table
+   *   .loadArray([{ customer: { address: { city: "Montréal" } } }], {
+   *     columnTypes: { customer: "JSON" },
+   *   })
+   *   .addColumn("city", "string", "json_extract_string(customer, '$.address.city')")
+   *   .log({ types: true });
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Read the tags array from a JSON column into a new JSON column.
+   * // The new tags column shows JSON/string and contains ["member","newsletter"].
+   * await table
+   *   .loadArray([{ customer: { tags: ["member", "newsletter"] } }], {
+   *     columnTypes: { customer: "JSON" },
+   *   })
+   *   .addColumn("tags", "JSON", "json_extract(customer, '$.tags')")
+   *   .log({ types: true });
    * ```
    *
    * @example
