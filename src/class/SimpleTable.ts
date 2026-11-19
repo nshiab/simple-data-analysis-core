@@ -5725,6 +5725,10 @@ export default class SimpleTable extends Simple {
    * array shape. A key or value column name selects the object shape. An index column
    * name selects the array shape. Use `sort()` to order object rows by their keys.
    *
+   * To expand multiple levels, chain `unnest()` calls. Use
+   * {@link addColumn | addColumn()} to put a nested array or object into its
+   * own column when you need to expand it next.
+   *
    * @example
    * ```ts
    * // Split text on commas and trim the pieces. Both rows keep id 1.
@@ -5805,6 +5809,28 @@ export default class SimpleTable extends Simple {
    *   )
    *   .unnest("inventory", { keyColumn: "product", valueColumn: "stock", keepEmpty: true })
    *   .sort({ store: "asc" })
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Expand the train keys into rows, then expand the stops within each route.
+   * // Train 101 gets two stop rows, and train 102 gets one.
+   * const snapshot = {
+   *   "101": {
+   *     route: { stops: [{ station: "Jasper" }, { station: "Edmonton" }] },
+   *   },
+   *   "102": { route: { stops: [{ station: "Ottawa" }] } },
+   * };
+   *
+   * await table
+   *   .loadArray([{ snapshot }], { columnTypes: { snapshot: "JSON" } })
+   *   .unnest("snapshot", { keyColumn: "trainKey", valueColumn: "train" })
+   *   .addColumn("stops", "JSON", "json_extract(train, '$.route.stops')")
+   *   .unnest("stops", { indexColumn: "stopNumber" })
+   *   .addColumn("station", "string", "json_extract_string(stops, '$.station')")
+   *   .selectColumns(["trainKey", "stopNumber", "station"])
+   *   .sort({ trainKey: "asc", stopNumber: "asc" })
    *   .log();
    * ```
    * @param column - The name of the column to expand.
