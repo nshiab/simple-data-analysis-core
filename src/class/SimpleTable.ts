@@ -2630,7 +2630,10 @@ export default class SimpleTable extends Simple {
    * For a column with a `JSON` type, use `json_extract_string()` to copy a
    * nested string, such as a city name, into a text column. Use
    * `json_extract()` with `"JSON"` as the new column type to put a nested array
-   * or object in its own column. You can then expand that column with `unnest()`.
+   * or object in its own column.
+   *
+   * To get one row per array element or JSON object property, see
+   * {@link unnest | unnest()}.
    *
    * Use `await table.getTypes()` to retrieve the column types or
    * `await table.log({ types: true })` to display them alongside the data.
