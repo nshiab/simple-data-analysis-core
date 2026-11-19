@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import SDAError from "../class/SDAError.ts";
 import type SimpleDB from "../class/SimpleDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 import type {
@@ -16,6 +17,7 @@ import mergeOptions from "./mergeOptions.ts";
 import queryDB from "./queryDB.ts";
 import quoteIdentifier from "./quoteIdentifier.ts";
 import { getRegisteredTables } from "./tableRegistry.ts";
+import { runWithoutCacheTableTracking } from "./cacheTableDependencies.ts";
 import {
   type AsyncOperationFrame,
   getAsyncOperationFrame,
@@ -125,7 +127,7 @@ async function flush(sdb: SimpleDB): Promise<void> {
     }
   }
   sdb.pendingCount = 0;
-  await replayEntries(sdb, entries);
+  await runWithoutCacheTableTracking(() => replayEntries(sdb, entries));
 }
 
 async function replayEntries(sdb: SimpleDB, pendingEntries: PendingEntry[]): Promise<void> {
@@ -304,7 +306,7 @@ async function drainAsyncOperationFrame(frame: AsyncOperationFrame): Promise<voi
     runWhileDrainingAsyncOperationFrame(frame, async () => {
       while (frame.entries.length > 0) {
         const entries = frame.entries.splice(0, frame.entries.length);
-        await replayEntries(frame.sdb, entries);
+        await runWithoutCacheTableTracking(() => replayEntries(frame.sdb, entries));
       }
     }),
   );
@@ -331,11 +333,12 @@ async function runSegment(table: SimpleTable, ops: RelationalOp[]): Promise<void
   // DESCRIBE round-trip.
   let schema: TableSchema | null = null;
   let segmentStart = 0;
+  const spatialRequested = ops.some((op) => op.needsSpatial);
   for (let i = 0; i < ops.length; i++) {
     const op = ops[i];
     let compiled: CompiledOp;
     try {
-      compiled = await compileOp(table, op, ctes, schema);
+      compiled = await compileOp(table, op, ctes, schema, spatialRequested);
     } catch (error) {
       // Flush-time validation (or a broken earlier fragment surfacing at
       // DESCRIBE) fails the chain at this operation. The steps before it
@@ -370,6 +373,7 @@ async function compileOp(
   op: RelationalOp,
   ctes: CompiledCte[],
   schema: TableSchema | null,
+  spatialRequested = false,
 ): Promise<CompiledOp> {
   if (op.needsSpatial) {
     await ensureSpatial(table);
@@ -397,7 +401,8 @@ async function compileOp(
 
   const input =
     ctes.length === 0 ? quoteIdentifier(table.name) : quoteIdentifier(ctes[ctes.length - 1].alias);
-  const inputSchema = op.needsSchema && schema === null ? await describeChain(table, ctes) : schema;
+  const inputSchema =
+    op.needsSchema && schema === null ? await describeChain(table, ctes, spatialRequested) : schema;
   const buildSchema = inputSchema ?? {};
   const outputSchema =
     inputSchema === null
@@ -508,7 +513,11 @@ function resolveValues(op: FusableOp, schema: TableSchema) {
  * yet, this describes the table itself; otherwise it describes the output of
  * the last fragment. DESCRIBE is planning-only, so no data is computed.
  */
-async function describeChain(table: SimpleTable, ctes: CompiledCte[]): Promise<TableSchema> {
+async function describeChain(
+  table: SimpleTable,
+  ctes: CompiledCte[],
+  spatialRequested: boolean,
+): Promise<TableSchema> {
   const select =
     ctes.length === 0
       ? `SELECT * FROM ${quoteIdentifier(table.name)}`
@@ -518,17 +527,29 @@ async function describeChain(table: SimpleTable, ctes: CompiledCte[]): Promise<T
   const query =
     ctes.length === 0 ? `DESCRIBE ${quoteIdentifier(table.name)}` : `DESCRIBE ${select}`;
   const values = ctes.flatMap((cte) => cte.values);
-  const types = await queryDB(
-    table,
-    query,
-    mergeOptions(table, {
-      table: table.name,
-      method: null,
-      parameters: null,
-      returnData: true,
-      values,
-      noClean: true,
-    }),
-  );
-  return extractTypes(types);
+  const options = mergeOptions(table, {
+    table: table.name,
+    method: null,
+    parameters: null,
+    returnData: true,
+    values,
+    noClean: true,
+  });
+  try {
+    return extractTypes(await queryDB(table, query, options));
+  } catch (error) {
+    // Raw SQL in an earlier fragment may need the spatial extension when
+    // DuckDB binds the chain. Load it here only if the chain also requests it.
+    if (
+      !spatialRequested ||
+      table.sdb.spatialLoaded ||
+      !(error instanceof SDAError) ||
+      !(error.cause instanceof Error) ||
+      !error.cause.message.includes("Please try installing and loading the spatial extension:")
+    ) {
+      throw error;
+    }
+    await ensureSpatial(table);
+    return extractTypes(await queryDB(table, query, options));
+  }
 }

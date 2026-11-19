@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import referencedTables from "./referencedTables.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
-import type { PendingOp, PendingOpInput } from "./pendingOps.ts";
+import type { PendingOp, PendingOpInput, TableSchema } from "./pendingOps.ts";
 import {
   getAsyncOperationFrame,
   runWhileDrainingAsyncOperationFrame,
@@ -44,12 +44,23 @@ export function captureCacheTableOperation(op: PendingOpInput): PendingOpInput {
   if (op.kind === "source") {
     return { ...op, buildSelect: bindCacheContext(op.buildSelect) };
   }
+  const { buildSelect } = op;
   return {
     ...op,
-    buildSelect: bindCacheContext(op.buildSelect),
+    buildSelect: bindCacheContext((input: string, schema: TableSchema) => {
+      const select = buildSelect(input, schema);
+      return typeof select === "string"
+        ? select
+        : { prepareSelect: bindCacheContext(select.prepareSelect) };
+    }),
     outputSchema: op.outputSchema === undefined ? undefined : bindCacheContext(op.outputSchema),
     values: typeof op.values === "function" ? bindCacheContext(op.values) : op.values,
   };
+}
+
+/** Flush bookkeeping belongs to the queue, independent of the observer's cache scope. */
+export function runWithoutCacheTableTracking<Result>(callback: () => Result): Result {
+  return dependencyContext.run([], callback);
 }
 
 function bindCacheContext<Args extends unknown[], Result>(
