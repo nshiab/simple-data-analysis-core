@@ -1923,3 +1923,36 @@ test("cache does not guard unrelated barriers queued outside its callback", asyn
     await sdb.close();
   }
 });
+
+test("cache excludes unrelated JSON unnest queued outside its callback", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const unrelated = sdb.newTable("guardUnrelatedUnnestSource");
+    await unrelated.loadArray([{ items: [1, 2] }], { columnTypes: { items: "JSON" } }).run();
+    const output = sdb.newTable("guardUnrelatedUnnestOutput");
+    const entered = Promise.withResolvers<void>();
+    const resume = Promise.withResolvers<void>();
+    let calls = 0;
+    const compute = async (table: SimpleTable) => {
+      calls++;
+      entered.resolve();
+      await resume.promise;
+      table.loadArray([{ value: 42 }]);
+    };
+    const computation = output.cache(compute);
+    await entered.promise;
+    try {
+      unrelated.unnest("items");
+    } finally {
+      resume.resolve();
+      await computation;
+    }
+    expect(await unrelated.getData()).toStrictEqual([{ items: "1" }, { items: "2" }]);
+    await unrelated.filter("items::INTEGER = 1").run();
+    await output.cache(compute);
+    expect(calls).toBe(1);
+    expect(await output.getData()).toStrictEqual([{ value: 42 }]);
+  } finally {
+    await sdb.close();
+  }
+});

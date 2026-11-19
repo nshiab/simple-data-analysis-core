@@ -2621,8 +2621,44 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Adds a new column to the table based on a specified data type (JavaScript or SQL types) and a SQL definition.
-   * With the default `SimpleDB.expressionSyntax: "js"`, expressions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
+   * Adds a column by evaluating `definition` for each row and casting the result to `type`.
+   *
+   * Pass `definition` as a JavaScript string containing a SQL expression.
+   *
+   * - To add a string, wrap the value in SQL single quotes, as in
+   *   `"'pending'"`. Double any apostrophe inside the value, as in `"'O''Brien'"`.
+   * - To add a number, put the number directly inside the JavaScript string,
+   *   as in `"12.5"`.
+   * - To add a boolean, use `"TRUE"` or `"FALSE"`.
+   * - To add a value calculated from other columns, refer to those columns by
+   *   name, as in `"price * quantity"`.
+   * - To add a value from a `STRUCT` column, join the field names with dots,
+   *   as in `"customer.address.city"`.
+   * - To add a value from a `JSON` column, use `json_extract_string()` for text,
+   *   as in `"json_extract_string(customer, '$.address.city')"`. Use
+   *   `json_extract()` with `"JSON"` as the new column type to put a nested
+   *   array or object in its own column.
+   *
+   * With the default `SimpleDB.expressionSyntax: "js"`, expressions support
+   * JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set
+   * `expressionSyntax: "sql"` to pass the expression directly to DuckDB.
+   *
+   * To get one row per array element or JSON object property, see
+   * {@link unnest | unnest()}.
+   *
+   * Use `await table.getTypes()` to retrieve the column types or
+   * `await table.log({ types: true })` to display them alongside the data.
+   *
+   * @example
+   * ```ts
+   * // Add the same text, number, and boolean to every row.
+   * await table
+   *   .loadArray([{ id: 1 }, { id: 2 }])
+   *   .addColumn("name", "string", "'O''Brien'")
+   *   .addColumn("price", "number", "12.5")
+   *   .addColumn("active", "boolean", "TRUE")
+   *   .log();
+   * ```
    *
    * @example
    * ```ts
@@ -2638,11 +2674,35 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Read a number from a JSON object into a new column using dot notation.
-   * await table.loadArray([{ details: { count: 3 } }], {
-   *   columnTypes: { details: "JSON" },
-   * })
-   *   .addColumn("count", "integer", "details.count")
+   * // orders.json contains [{"customer":{"address":{"city":"Montréal"}}}].
+   * // The new city column contains Montréal.
+   * await table
+   *   .loadData("orders.json")
+   *   .addColumn("city", "string", "customer.address.city")
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Read the city name from a JSON column into a text column.
+   * // The new city column contains Montréal.
+   * await table
+   *   .loadArray([{ customer: { address: { city: "Montréal" } } }], {
+   *     columnTypes: { customer: "JSON" },
+   *   })
+   *   .addColumn("city", "string", "json_extract_string(customer, '$.address.city')")
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Read the tags array from a JSON column into a new JSON column.
+   * // The new tags column contains ["member","newsletter"].
+   * await table
+   *   .loadArray([{ customer: { tags: ["member", "newsletter"] } }], {
+   *     columnTypes: { customer: "JSON" },
+   *   })
+   *   .addColumn("tags", "JSON", "json_extract(customer, '$.tags')")
    *   .log();
    * ```
    *
@@ -2656,7 +2716,7 @@ export default class SimpleTable extends Simple {
    * ```
    * @param newColumn - The name of the new column to be added.
    * @param type - The data type for the new column. Can be a JavaScript type (e.g., `"number"`, `"string"`) or a SQL type (e.g., `"integer"`, `"varchar"`, `"JSON"`, `"FLOAT[3]"`, `"GEOMETRY('EPSG:4326')"`).
-   * @param definition - A SQL expression defining how the values for the new column should be computed (e.g., `"column1 + column2"`, `"ST_Centroid(geom_column)"`).
+   * @param definition - The SQL expression to evaluate for each row, supplied as a JavaScript string.
    * @returns The table, so methods can be chained.
    * @category Column Operations
    */
@@ -5647,34 +5707,152 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Unnests (expands) rows by splitting a column's string values into multiple rows based on a separator.
+   * Expands delimited text, DuckDB lists and fixed-size arrays, and JSON arrays
+   * and objects into rows.
    *
-   * Each value in the specified column is split using the provided separator, and a new row is created for each resulting substring. All other column values are duplicated across the newly created rows.
+   * Set `options.separator` to split a string column. Each trimmed substring
+   * replaces the original string in its own row.
+   * For lists and arrays, each element replaces the original value in its own row.
+   * For JSON objects, each top-level property produces a row with a string key and a
+   * JSON value. The key and value columns replace the original object column.
+   * Other columns are copied onto each output row. An empty or null list, array,
+   * or object produces zero rows by default.
+   *
+   * With `loadArray()`, declare `JSON` for variable-length arrays or
+   * `FLOAT[n]` for fixed-size float arrays.
+   *
+   * A JSON column must contain arrays or objects of a single shape. The first non-null
+   * value determines the shape by default, and an empty or all-null column uses the
+   * array shape. A key or value column name selects the object shape. An index column
+   * name selects the array shape. Use `sort()` to order object rows by their keys.
+   *
+   * To expand multiple levels, chain `unnest()` calls. Use
+   * {@link addColumn | addColumn()} to put a nested array or object into its
+   * own column when you need to expand it next.
    *
    * @example
    * ```ts
-   * // Unnest 'tags' column separated by commas
-   * // Before: [{ id: 1, tags: "red,blue,green" }]
-   * // After:  [{ id: 1, tags: "red" }, { id: 1, tags: "blue" }, { id: 1, tags: "green" }]
-   * await table.unnest("tags", ",").log();
+   * // Split text on commas and trim the pieces. Both rows keep id 1.
+   * // The tags values are "red" and "blue".
+   * await table
+   *   .loadArray([{ id: 1, tags: "red, blue" }])
+   *   .unnest("tags", { separator: "," })
+   *   .log();
    * ```
    *
    * @example
    * ```ts
-   * // Unnest 'neighborhoods' column separated by " / "
-   * // Before: [{ city: "Montreal", neighborhoods: "Old Montreal / Chinatown / Griffintown" }]
-   * // After:  [{ city: "Montreal", neighborhoods: "Old Montreal" },
-   * //         { city: "Montreal", neighborhoods: "Chinatown" },
-   * //         { city: "Montreal", neighborhoods: "Griffintown" }]
-   * await table.unnest("neighborhoods", " / ").log();
+   * // Expand JSON arrays of different lengths. Team A gets two rows, and team B gets one.
+   * await table
+   *   .loadArray(
+   *     [
+   *       { team: "A", scores: [12, 18] },
+   *       { team: "B", scores: [15] },
+   *     ],
+   *     { columnTypes: { scores: "JSON" } },
+   *   )
+   *   .unnest("scores")
+   *   .log();
    * ```
-   * @param column - The name of the column containing string values to be split and unnested.
-   * @param separator - The delimiter string used to split the column values.
+   *
+   * @example
+   * ```ts
+   * // Expand a fixed-size array. Station A gets a row for each reading.
+   * await table
+   *   .loadArray([{ station: "A", readings: [18.5, 20.5] }], {
+   *     columnTypes: { readings: "FLOAT[2]" },
+   *   })
+   *   .unnest("readings")
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Expand a JSON array and number its elements starting at 1.
+   * // Order 1 gets two rows. Orders 2 and 3 each get a row with null items and itemNumber.
+   * await table
+   *   .loadArray(
+   *     [
+   *       { orderId: 1, items: [{ name: "tea" }, { name: "coffee" }] },
+   *       { orderId: 2, items: [] },
+   *       { orderId: 3, items: null },
+   *     ],
+   *     { columnTypes: { items: "JSON" } },
+   *   )
+   *   .unnest("items", { indexColumn: "itemNumber", keepEmpty: true })
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Expand a JSON object. The key and value columns replace inventory.
+   * // The rows have key "coffee" with value 3 and key "tea" with value 7.
+   * await table
+   *   .loadArray([{ store: "East", inventory: { tea: 7, coffee: 3 } }], {
+   *     columnTypes: { inventory: "JSON" },
+   *   })
+   *   .unnest("inventory")
+   *   .sort({ key: "asc" })
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Name the key and value columns product and stock.
+   * // Store West stays in the result with null product and stock.
+   * await table
+   *   .loadArray(
+   *     [
+   *       { store: "East", inventory: { tea: 7 } },
+   *       { store: "West", inventory: {} },
+   *     ],
+   *     { columnTypes: { inventory: "JSON" } },
+   *   )
+   *   .unnest("inventory", { keyColumn: "product", valueColumn: "stock", keepEmpty: true })
+   *   .sort({ store: "asc" })
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Chain unnest() calls to expand deeply nested JSON.
+   * // First make one row per store, then one row per product in that store.
+   * const inventory = {
+   *   East: { tea: 7, coffee: 3 },
+   *   West: { tea: 2 },
+   * };
+   *
+   * await table
+   *   .loadArray([{ inventory }], {
+   *     columnTypes: { inventory: "JSON" },
+   *   })
+   *   .unnest("inventory", { keyColumn: "store", valueColumn: "products" })
+   *   .unnest("products", { keyColumn: "product", valueColumn: "stock" })
+   *   .sort({ store: "asc", product: "asc" })
+   *   .log();
+   * ```
+   * @param column - The name of the column to expand.
+   * @param options - Settings for expanding the column. Defaults to `{}`.
+   * @param options.separator - The delimiter for splitting a string column. Use this option by itself.
+   * @param options.keyColumn - The output column for JSON object keys. Defaults to `"key"`.
+   * @param options.valueColumn - The output column for JSON object values. Defaults to `"value"`.
+   * @param options.indexColumn - An optional output column for the one-based position within each list or array.
+   * @param options.keepEmpty - Emit one row with null outputs for each empty or null list, array, or object. Defaults to `false`.
    * @returns The table, so methods can be chained.
+   * @throws If options conflict, the column is missing or incompatible with the options, the JSON shapes differ, or output names collide.
    * @category Updating Data
    */
-  unnest(column: string, separator: string): this {
-    unnest(this, column, separator);
+  unnest(
+    column: string,
+    options: {
+      separator?: string;
+      keyColumn?: string;
+      valueColumn?: string;
+      indexColumn?: string;
+      keepEmpty?: boolean;
+    } = {},
+  ): this {
+    unnest(this, column, options);
     return this;
   }
 
@@ -5710,36 +5888,43 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Nests (collapses) rows by aggregating a column's values into a single string per group, separated by a delimiter.
+   * Collects a column's values into one DuckDB list per group.
    *
-   * This is the inverse operation of `unnest()`. Multiple rows are combined into fewer rows by grouping on specified category columns and concatenating the target column values with a separator.
+   * Each output row contains the grouping columns and a list in the original
+   * value column. The list keeps the input order, duplicate values, and nulls.
+   * Use {@link unnest | unnest()} to expand the list into rows again.
    *
    * @example
    * ```ts
-   * // Nest 'neighborhoods' column separated by " / " for each city
-   * // Before: [{ city: "Montreal", neighborhoods: "Old Montreal" },
-   * //         { city: "Montreal", neighborhoods: "Chinatown" },
-   * //         { city: "Montreal", neighborhoods: "Griffintown" }]
-   * // After:  [{ city: "Montreal", neighborhoods: "Old Montreal / Chinatown / Griffintown" }]
-   * await table.nest("neighborhoods", " / ", "city").log();
+   * // Team A gets scores [12, 18]. Team B gets [15].
+   * await table
+   *   .loadArray([
+   *     { team: "A", score: 12 },
+   *     { team: "B", score: 15 },
+   *     { team: "A", score: 18 },
+   *   ])
+   *   .nest("score", "team")
+   *   .log();
    * ```
    *
    * @example
    * ```ts
-   * // Nest with multiple category columns
-   * // Before: [{ country: "Canada", city: "Montreal", tags: "red" },
-   * //         { country: "Canada", city: "Montreal", tags: "blue" }]
-   * // After:  [{ country: "Canada", city: "Montreal", tags: "red,blue" }]
-   * await table.nest("tags", ",", ["country", "city"]).log();
+   * // Collect tags for each country and city.
+   * await table
+   *   .loadArray([
+   *     { country: "Canada", city: "Montréal", tag: "red" },
+   *     { country: "Canada", city: "Montréal", tag: "blue" },
+   *   ])
+   *   .nest("tag", ["country", "city"])
+   *   .log();
    * ```
-   * @param column - The name of the column whose values will be aggregated and concatenated.
-   * @param separator - The delimiter string used to join the column values.
-   * @param by - The column name or an array of column names to group by.
+   * @param column - The column containing the values to collect into lists.
+   * @param by - One or more grouping column names, distinct from the value column.
    * @returns The table, so methods can be chained.
    * @category Updating Data
    */
-  nest(column: string, separator: string, by: string | string[]): this {
-    nest(this, column, separator, by);
+  nest(column: string, by: string | string[]): this {
+    nest(this, column, by, arguments.length);
     return this;
   }
 

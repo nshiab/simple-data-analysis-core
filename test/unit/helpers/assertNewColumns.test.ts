@@ -46,3 +46,18 @@ test("assertNewColumns - still throws for an existing column not in allowInPlace
 test("assertNewColumns - passes for an empty column list", () => {
   assertNewColumns(schema, [], "cloneColumn()");
 });
+
+test("assertNewColumns can check DuckDB identifier collisions and allow a replaced name", () => {
+  const options = { checkDuckDBNameCollisions: true };
+  assertNewColumns(schema, ["A"], "unnest()", ["a"], options);
+  assertThrows(
+    () => assertNewColumns(schema, ["B"], "unnest()", ["a"], options),
+    Error,
+    'the column "B" already exists',
+  );
+  assertThrows(
+    () => assertNewColumns(schema, ["A", "a"], "unnest()", ["a"], options),
+    Error,
+    'the column "a" already exists',
+  );
+});
