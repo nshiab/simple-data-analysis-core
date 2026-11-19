@@ -5815,23 +5815,14 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Expand the train keys into rows, then expand the stops within each route.
-   * // Train 101 gets two stop rows, and train 102 gets one.
-   * const snapshot = {
-   *   "101": {
-   *     route: { stops: [{ station: "Jasper" }, { station: "Edmonton" }] },
-   *   },
-   *   "102": { route: { stops: [{ station: "Ottawa" }] } },
-   * };
-   *
+   * // The first call makes one row per round of scores.
+   * // The second makes one row per score. Team A gets scores 12, 18, and 15.
    * await table
-   *   .loadArray([{ snapshot }], { columnTypes: { snapshot: "JSON" } })
-   *   .unnest("snapshot", { keyColumn: "trainKey", valueColumn: "train" })
-   *   .addColumn("stops", "JSON", "json_extract(train, '$.route.stops')")
-   *   .unnest("stops", { indexColumn: "stopNumber" })
-   *   .addColumn("station", "string", "json_extract_string(stops, '$.station')")
-   *   .selectColumns(["trainKey", "stopNumber", "station"])
-   *   .sort({ trainKey: "asc", stopNumber: "asc" })
+   *   .loadArray([{ team: "A", scores: [[12, 18], [15]] }], {
+   *     columnTypes: { scores: "JSON" },
+   *   })
+   *   .unnest("scores")
+   *   .unnest("scores")
    *   .log();
    * ```
    * @param column - The name of the column to expand.
