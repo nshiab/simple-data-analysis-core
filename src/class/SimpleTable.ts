@@ -2623,6 +2623,8 @@ export default class SimpleTable extends Simple {
   /**
    * Adds a new column to the table based on a specified data type (JavaScript or SQL types) and a SQL definition.
    * With the default `SimpleDB.expressionSyntax: "js"`, expressions support JavaScript-style operators (`&&`, `||`, `===`, `!==`). Set `expressionSyntax: "sql"` for unchanged SQL.
+   * Use dot notation for fields in an inferred DuckDB struct. For a `JSON` column,
+   * use `json_extract_string()` for unquoted text or `json_extract()` to keep a nested value as JSON.
    *
    * @example
    * ```ts
@@ -2638,11 +2640,20 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
-   * // Read a number from a JSON object into a new column using dot notation.
-   * await table.loadArray([{ details: { count: 3 } }], {
-   *   columnTypes: { details: "JSON" },
+   * // Extract a city and keep an array from a nested JSON column.
+   * await table.loadArray([{ customer: { address: { city: "Montréal" }, tags: ["member"] } }], {
+   *   columnTypes: { customer: "JSON" },
    * })
-   *   .addColumn("count", "integer", "details.count")
+   *   .addColumn("city", "string", "json_extract_string(customer, '$.address.city')")
+   *   .addColumn("tags", "JSON", "json_extract(customer, '$.tags')")
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Read the same nested field when loadData() infers customer as a struct.
+   * await table.loadData("orders.json")
+   *   .addColumn("city", "string", "customer.address.city")
    *   .log();
    * ```
    *
@@ -5647,9 +5658,18 @@ export default class SimpleTable extends Simple {
   }
 
   /**
-   * Unnests (expands) rows by splitting a column's string values into multiple rows based on a separator.
+   * Expands a delimited string, list, JSON array, or JSON object into rows.
    *
-   * Each value in the specified column is split using the provided separator, and a new row is created for each resulting substring. All other column values are duplicated across the newly created rows.
+   * With a delimiter, each trimmed substring replaces the original string in its own row.
+   * For lists and arrays, each element replaces the original value in its own row.
+   * For JSON objects, each top-level property produces a row with a string key and a
+   * JSON value. The key and value columns replace the original object column.
+   * Other columns are copied onto each output row.
+   *
+   * A JSON column must contain arrays or objects of a single shape. The first non-null
+   * value determines the shape by default, and an empty or all-null column uses the
+   * array shape. A key or value column name selects the object shape. An index column
+   * name selects the array shape. Use `sort()` to order object rows by their keys.
    *
    * @example
    * ```ts
@@ -5668,13 +5688,51 @@ export default class SimpleTable extends Simple {
    * //         { city: "Montreal", neighborhoods: "Griffintown" }]
    * await table.unnest("neighborhoods", " / ").log();
    * ```
-   * @param column - The name of the column containing string values to be split and unnested.
-   * @param separator - The delimiter string used to split the column values.
+   *
+   * @example
+   * ```ts
+   * // Keep each stop's position within the train's list of stops.
+   * await table
+   *   .loadArray([{ train: "101", stops: ["Jasper", "Edmonton"] }], {
+   *     columnTypes: { stops: "JSON" },
+   *   })
+   *   .unnest("stops", { indexColumn: "stopNumber" })
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
+   * // Turn the root train keys in a compressed JSON snapshot into rows.
+   * await table
+   *   .loadData("01_10.json.gz", { records: false, columnTypes: { snapshot: "JSON" } })
+   *   .unnest("snapshot", { keyColumn: "trainKey", valueColumn: "train" })
+   *   .addColumn("times", "JSON", "json_extract(train, '$.times')")
+   *   .unnest("times", { indexColumn: "stopNumber" })
+   *   .addColumn("station", "string", "json_extract_string(times, '$.station')")
+   *   .sort({ trainKey: "asc", stopNumber: "asc" })
+   *   .log();
+   * ```
+   * @param column - The name of the column to expand.
+   * @param separatorOrOptions - A delimiter string for text, or optional settings for lists and JSON.
+   * @param separatorOrOptions.keyColumn - The output column for JSON object keys. Defaults to `"key"`.
+   * @param separatorOrOptions.valueColumn - The output column for JSON object values. Defaults to `"value"`.
+   * @param separatorOrOptions.indexColumn - An optional output column for the one-based position within each list or array.
+   * @param separatorOrOptions.keepEmpty - Emit one row with null outputs for each empty or null list, array, or object. Defaults to `false`.
    * @returns The table, so methods can be chained.
    * @category Updating Data
    */
-  unnest(column: string, separator: string): this {
-    unnest(this, column, separator);
+  unnest(
+    column: string,
+    separatorOrOptions:
+      | string
+      | {
+          keyColumn?: string;
+          valueColumn?: string;
+          indexColumn?: string;
+          keepEmpty?: boolean;
+        } = {},
+  ): this {
+    unnest(this, column, separatorOrOptions);
     return this;
   }
 
@@ -5712,7 +5770,7 @@ export default class SimpleTable extends Simple {
   /**
    * Nests (collapses) rows by aggregating a column's values into a single string per group, separated by a delimiter.
    *
-   * This is the inverse operation of `unnest()`. Multiple rows are combined into fewer rows by grouping on specified category columns and concatenating the target column values with a separator.
+   * This is the inverse of the delimited-text form of `unnest()`. Multiple rows are combined into fewer rows by grouping on specified category columns and concatenating the target column values with a separator.
    *
    * @example
    * ```ts
