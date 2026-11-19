@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.24**](../../index.md)
+[**Simple Data Analysis Core v2.1.25**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **addGeoNoise**(`maxDistance`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8270](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L8270)
+Defined in: [src/class/SimpleTable.ts:8455](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.25/src/class/SimpleTable.ts#L8455)
 
 Moves EPSG:4326 point geometries to random locations within a maximum great-circle distance of their original positions.
 

@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.24**](../../index.md)
+[**Simple Data Analysis Core v2.1.25**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **skip**(`count`): `this`
 
-Defined in: [src/class/SimpleTable.ts:1889](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.24/src/class/SimpleTable.ts#L1889)
+Defined in: [src/class/SimpleTable.ts:1889](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.25/src/class/SimpleTable.ts#L1889)
 
 Skips the first `n` rows of the table, effectively removing them.
 
