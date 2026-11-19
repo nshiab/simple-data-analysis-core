@@ -5,7 +5,17 @@ import queueOp from "../helpers/queueOp.ts";
 import stringToArray from "../helpers/stringToArray.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
-export default function nest(simpleTable: SimpleTable, column: string, by: string | string[]) {
+export default function nest(
+  simpleTable: SimpleTable,
+  column: string,
+  by: string | string[],
+  argumentCount: number,
+) {
+  if (argumentCount > 2) {
+    throw new TypeError(
+      'nest() takes a column and the grouping columns. Use nest("score", "team").',
+    );
+  }
   if (typeof column !== "string" || column.length === 0) {
     throw new TypeError("nest() column must be a non-empty column name.");
   }

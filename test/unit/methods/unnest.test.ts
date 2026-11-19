@@ -251,6 +251,40 @@ test.each([
 });
 
 test.each([
+  {
+    items: [[1], { stock: 7 }],
+    options: { indexColumn: "position" },
+    hint: "requires JSON arrays. Found JSON type OBJECT.",
+  },
+  {
+    items: [{ stock: 7 }, [1]],
+    options: { keyColumn: "key" },
+    hint: "requires JSON objects. Found JSON type ARRAY.",
+  },
+])(
+  "validates JSON before later operations discard rows for $options",
+  async ({ items, options, hint }) => {
+    const sdb = new SimpleDB();
+    try {
+      for (const discard of ["filter", "limit"]) {
+        const table = sdb
+          .newTable()
+          .loadArray(
+            items.map((item, id) => ({ id, item })),
+            { columnTypes: { item: "JSON" } },
+          )
+          .unnest("item", options);
+        if (discard === "filter") table.filter("id = 0");
+        else table.selectRows(0);
+        await expect(table.getData()).rejects.toThrow(hint);
+      }
+    } finally {
+      await sdb.close();
+    }
+  },
+);
+
+test.each([
   { options: {}, hint: "To split text, use options.separator by itself." },
   { options: { separator: "," }, hint: "options.separator requires a string (VARCHAR) column." },
   {
@@ -339,7 +373,7 @@ test("rejects output names that would collide with another column", async () => 
         columnTypes: { snapshot: "JSON" },
       })
       .unnest("snapshot", { keyColumn: "KEY" });
-    await expect(table.run()).rejects.toThrow('the output column "KEY" already exists');
+    await expect(table.run()).rejects.toThrow('the column "KEY" already exists');
   } finally {
     await sdb.close();
   }

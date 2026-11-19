@@ -5924,12 +5924,7 @@ export default class SimpleTable extends Simple {
    * @category Updating Data
    */
   nest(column: string, by: string | string[]): this {
-    if (arguments.length > 2) {
-      throw new TypeError(
-        'nest() takes a column and the grouping columns. Use nest("score", "team").',
-      );
-    }
-    nest(this, column, by);
+    nest(this, column, by, arguments.length);
     return this;
   }
 

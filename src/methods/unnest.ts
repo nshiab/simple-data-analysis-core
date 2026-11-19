@@ -1,9 +1,9 @@
-import foldIdentifier from "../helpers/foldIdentifier.ts";
+import assertNewColumns from "../helpers/assertNewColumns.ts";
 import mergeOptions from "../helpers/mergeOptions.ts";
-import parseValue from "../helpers/parseValue.ts";
 import queryDB from "../helpers/queryDB.ts";
 import quoteIdentifier from "../helpers/quoteIdentifier.ts";
 import queueOp from "../helpers/queueOp.ts";
+import requireColumn from "../helpers/requireColumn.ts";
 import type { TableSchema } from "../helpers/pendingOps.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
 
@@ -15,7 +15,7 @@ type UnnestOptions = {
   keepEmpty?: boolean;
 };
 
-type Format = "text" | "array" | "object";
+type UnnestMode = "text" | "array" | "object";
 
 export default function unnest(
   simpleTable: SimpleTable,
@@ -33,61 +33,69 @@ export default function unnest(
   }
 
   options = { ...options };
-  const format = requestedFormat(options);
+  const mode = validateOptionsAndGetMode(options);
   const parameters = { column, options };
   const { separator } = options;
-  if (format !== undefined) {
-    queueOp(simpleTable, {
-      kind: "fusable",
-      method: "unnest()",
-      parameters,
-      values: separator === undefined ? undefined : [separator],
-      needsSchema: true,
-      buildSelect: (input, schema) =>
-        unnestSelect(input, schema, findColumn(schema, column), format, options),
-    });
-    return;
-  }
-
-  // The JSON column type alone cannot tell us which output columns to use.
-  // Inspect the materialized input so the probe and expansion see the same data.
   queueOp(simpleTable, {
-    kind: "barrier",
+    kind: "fusable",
     method: "unnest()",
     parameters,
-    execute: async () => {
-      const schema = await simpleTable.getTypes();
-      const source = findColumn(schema, column);
-      const input = quoteIdentifier(simpleTable.name);
-      const queryOptions = mergeOptions(simpleTable, {
-        table: simpleTable.name,
-        method: "unnest()",
-        parameters,
-      });
-      let format: Format = "array";
-      if (source.type === "JSON") {
-        const jsonType = `json_type(${quoteIdentifier(source.name)})`;
-        const rows = await queryDB(
-          simpleTable,
-          `SELECT ${jsonType} AS shape FROM ${input} WHERE ${jsonType} <> 'NULL' LIMIT 1`,
-          { ...queryOptions, returnData: true },
-        );
-        const shape = rows?.[0]?.shape;
-        if (shape === "OBJECT") {
-          format = "object";
-        } else if (typeof shape === "string" && shape !== "ARRAY") {
-          throw new Error(
-            `unnest() column ${quoteIdentifier(source.name)} contains JSON type ${shape}. Use a JSON column containing arrays or objects.`,
-          );
-        }
+    needsSchema: true,
+    values: separator === undefined ? undefined : [separator],
+    buildSelect: (input, schema) => {
+      const source = requireColumn(schema, column, "unnest()");
+      if (source.type !== "JSON" || mode === "text") {
+        return unnestSelect(input, schema, source, mode ?? "array", options);
       }
-      const select = unnestSelect(input, schema, source, format, options);
-      await queryDB(simpleTable, `CREATE OR REPLACE TABLE ${input} AS ${select}`, queryOptions);
+
+      // Check the materialized input before downstream operations can filter
+      // it. Expansion can then fuse with those operations.
+      return {
+        prepareSelect: async (materializedInput) => {
+          const columnName = quoteIdentifier(source.name);
+          const jsonType = `json_type(${columnName})`;
+          const queryOptions = mergeOptions(simpleTable, {
+            table: simpleTable.name,
+            method: "unnest()",
+            parameters,
+            returnData: true,
+          });
+          let jsonMode = mode;
+          if (jsonMode === undefined) {
+            const rows = await queryDB(
+              simpleTable,
+              `SELECT ${jsonType} AS shape FROM ${materializedInput} WHERE ${jsonType} <> 'NULL' LIMIT 1`,
+              queryOptions,
+            );
+            const shape = rows?.[0]?.shape;
+            if (typeof shape === "string" && shape !== "ARRAY" && shape !== "OBJECT") {
+              throw new Error(
+                `unnest() column ${columnName} contains JSON type ${shape}. Use a JSON column containing arrays or objects.`,
+              );
+            }
+            jsonMode = shape === "OBJECT" ? "object" : "array";
+          }
+          const select = unnestSelect(materializedInput, schema, source, jsonMode, options);
+          const invalid = await queryDB(
+            simpleTable,
+            `SELECT ${jsonType} AS shape FROM ${materializedInput}
+WHERE ${jsonType} NOT IN ('NULL', '${jsonMode.toUpperCase()}') LIMIT 1`,
+            queryOptions,
+          );
+          const shape = invalid?.[0]?.shape;
+          if (typeof shape === "string") {
+            throw new Error(
+              `unnest() column ${columnName} requires JSON ${jsonMode}s. Found JSON type ${shape}. Use one JSON shape per column. options.indexColumn applies to arrays. options.keyColumn and options.valueColumn apply to objects.`,
+            );
+          }
+          return select;
+        },
+      };
     },
   });
 }
 
-function requestedFormat(options: UnnestOptions): Format | undefined {
+function validateOptionsAndGetMode(options: UnnestOptions): UnnestMode | undefined {
   const { separator, keyColumn, valueColumn, indexColumn, keepEmpty } = options;
   if (separator !== undefined && typeof separator !== "string") {
     throw new TypeError("unnest() options.separator must be a string.");
@@ -122,29 +130,17 @@ function requestedFormat(options: UnnestOptions): Format | undefined {
   return objectOptions ? "object" : undefined;
 }
 
-function findColumn(schema: TableSchema, column: string): { name: string; type: string } {
-  const folded = foldIdentifier(column);
-  const match = Object.entries(schema).find(([name]) => foldIdentifier(name) === folded);
-  if (match === undefined) {
-    throw new Error(
-      `unnest() column ${quoteIdentifier(column)} does not exist. Check the column name.`,
-    );
-  }
-  const [name, type] = match;
-  return { name, type };
-}
-
 function unnestSelect(
   input: string,
   schema: TableSchema,
   source: { name: string; type: string },
-  format: Format,
+  mode: UnnestMode,
   options: UnnestOptions,
 ): string {
   const { name, type } = source;
   const column = quoteIdentifier(name);
   const typeError = `unnest() column ${column} has type ${type}.`;
-  if (format === "text") {
+  if (mode === "text") {
     if (type !== "VARCHAR") {
       throw new Error(
         `${typeError} options.separator requires a string (VARCHAR) column. Choose a string column or omit the separator to expand a list, array, or JSON object.`,
@@ -153,7 +149,7 @@ function unnestSelect(
     return `SELECT * EXCLUDE (${column}), TRIM(UNNEST(SPLIT(${column}, ?))) AS ${column} FROM ${input}`;
   }
 
-  if (format === "object") {
+  if (mode === "object") {
     if (type !== "JSON") {
       throw new Error(
         `${typeError} options.keyColumn and options.valueColumn require a JSON object column. Remove them to expand a list or array.`,
@@ -161,8 +157,9 @@ function unnestSelect(
     }
     const key = options.keyColumn ?? "key";
     const value = options.valueColumn ?? "value";
-    assertOutputColumns(schema, [key, value], name);
-    const json = requireJsonShape(`__sda_source.${column}`, column, "object");
+    assertNewColumns(schema, [key, value], "unnest()", [name], { caseInsensitive: true });
+    const jsonColumn = `__sda_source.${column}`;
+    const json = `CASE WHEN json_type(${jsonColumn}) <> 'NULL' THEN ${jsonColumn} END`;
     const entries = `LATERAL json_each(${json}) AS __sda_entry`;
     const join = options.keepEmpty ? `LEFT JOIN ${entries} ON TRUE` : `CROSS JOIN ${entries}`;
     return `SELECT __sda_source.* EXCLUDE (${column}), __sda_entry.key AS ${quoteIdentifier(key)},
@@ -182,7 +179,7 @@ function unnestSelect(
 
   let list = column;
   if (type === "JSON") {
-    list = `CAST(${requireJsonShape(column, column, "array")} AS JSON[])`;
+    list = `CAST(${column} AS JSON[])`;
   } else if (!type.endsWith("[]")) {
     // Slicing a fixed-size array gives a list and preserves SQL NULLs.
     list = `list_slice(${column}, 1, -1)`;
@@ -192,37 +189,10 @@ function unnestSelect(
     : list;
   let index = "";
   if (options.indexColumn !== undefined) {
-    assertOutputColumns(schema, [options.indexColumn]);
+    assertNewColumns(schema, [options.indexColumn], "unnest()", [], { caseInsensitive: true });
     // DuckDB pads the position with NULL when the element expression
     // inserts a row for an empty list.
     index = `, generate_subscripts(${list}, 1) AS ${quoteIdentifier(options.indexColumn)}`;
   }
   return `SELECT * EXCLUDE (${column}), UNNEST(${elements}) AS ${column}${index} FROM ${input}`;
-}
-
-function assertOutputColumns(schema: TableSchema, columns: string[], excluded?: string): void {
-  const used = new Set(
-    Object.keys(schema)
-      .filter((name) => name !== excluded)
-      .map(foldIdentifier),
-  );
-  for (const column of columns) {
-    const folded = foldIdentifier(column);
-    if (used.has(folded)) {
-      throw new Error(
-        `unnest() the output column ${quoteIdentifier(column)} already exists. Choose a different name.`,
-      );
-    }
-    used.add(folded);
-  }
-}
-
-function requireJsonShape(expression: string, column: string, shape: "array" | "object"): string {
-  const prefix = parseValue(`unnest() column ${column} requires JSON ${shape}s. Found JSON type `);
-  return `CASE COALESCE(json_type(${expression}), 'NULL')
-    WHEN '${shape.toUpperCase()}' THEN ${expression}
-    WHEN 'NULL' THEN NULL
-    ELSE error(CONCAT(${prefix}, json_type(${expression}),
-      '. Use one JSON shape per column. options.indexColumn applies to arrays. options.keyColumn and options.valueColumn apply to objects.'))
-  END`;
 }

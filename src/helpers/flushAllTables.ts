@@ -1,7 +1,13 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import type SimpleDB from "../class/SimpleDB.ts";
 import type SimpleTable from "../class/SimpleTable.ts";
-import type { FusableOp, PendingOp, RelationalOp, TableSchema } from "./pendingOps.ts";
+import type {
+  FusableOp,
+  PendingOp,
+  RelationalOp,
+  MaterializedInputSelect,
+  TableSchema,
+} from "./pendingOps.ts";
 import cleanSQL from "./cleanSQL.ts";
 import referencedTables from "./referencedTables.ts";
 import ensureSpatial from "./ensureSpatial.ts";
@@ -105,10 +111,9 @@ type CompiledCte = {
   values: import("@duckdb/node-api").DuckDBValue[];
 };
 
-type CompiledOp = {
-  cte: CompiledCte;
-  schema: TableSchema | null;
-};
+type CompiledOp =
+  | { cte: CompiledCte; schema: TableSchema | null }
+  | (MaterializedInputSelect & { alias: string; values: CompiledCte["values"] });
 
 async function flush(sdb: SimpleDB): Promise<void> {
   // Take ownership of every queue upfront, in program order.
@@ -328,24 +333,39 @@ async function runSegment(table: SimpleTable, ops: RelationalOp[]): Promise<void
   // they preserve it, so a run of same-shape steps costs at most one
   // DESCRIBE round-trip.
   let schema: TableSchema | null = null;
+  let segmentStart = 0;
   for (let i = 0; i < ops.length; i++) {
     const op = ops[i];
+    let compiled: CompiledOp;
     try {
-      const compiled = await compileOp(table, op, ctes, schema);
-      ctes.push(compiled.cte);
-      schema = compiled.schema;
+      compiled = await compileOp(table, op, ctes, schema);
     } catch (error) {
       // Flush-time validation (or a broken earlier fragment surfacing at
       // DESCRIBE) fails the chain at this operation. The steps before it
       // already succeeded in program order, so they execute before the
       // error propagates — like a v1 script failing at this line.
       if (ctes.length > 0) {
-        await executeFused(table, ops.slice(0, i), ctes);
+        await executeFused(table, ops.slice(segmentStart, i), ctes);
       }
       throw error;
     }
+    if ("cte" in compiled) {
+      ctes.push(compiled.cte);
+      schema = compiled.schema;
+      continue;
+    }
+
+    if (ctes.length > 0) {
+      await executeFused(table, ops.slice(segmentStart, i), ctes);
+    }
+    ctes.length = 0;
+    ctes.push(await prepareCte(table, compiled));
+    schema = null;
+    segmentStart = i;
   }
-  await executeFused(table, ops, ctes);
+  if (ctes.length > 0) {
+    await executeFused(table, ops.slice(segmentStart), ctes);
+  }
 }
 
 async function compileOp(
@@ -386,10 +406,14 @@ async function compileOp(
         : op.preservesSchema === true
           ? inputSchema
           : null;
+  const select = op.buildSelect(input, buildSchema);
+  if (typeof select !== "string") {
+    return { ...select, alias, values: resolveValues(op, buildSchema) };
+  }
   return {
     cte: {
       alias,
-      select: cleanSQL(op.buildSelect(input, buildSchema), table.sdb.expressionSyntax),
+      select: cleanSQL(select, table.sdb.expressionSyntax),
       values: resolveValues(op, buildSchema),
     },
     schema: outputSchema,
@@ -448,17 +472,33 @@ async function runStepwise(table: SimpleTable, op: RelationalOp): Promise<void> 
   // Compilation is shared with the fused path, so both paths execute the same
   // cleaned fragment with the same bound values and schema handling.
   const compiled = await compileOp(table, op, [], null);
+  const input = quoteIdentifier(table.name);
+  const { select, values } = "cte" in compiled ? compiled.cte : await prepareCte(table, compiled);
   await queryDB(
     table,
-    `CREATE OR REPLACE TABLE ${quoteIdentifier(table.name)} AS ${compiled.cte.select}`,
+    `CREATE OR REPLACE TABLE ${input} AS ${select}`,
     mergeOptions(table, {
       table: table.name,
       method: op.method,
       parameters: op.parameters,
-      values: compiled.cte.values,
+      values,
       noClean: true,
     }),
   );
+}
+
+async function prepareCte(
+  table: SimpleTable,
+  compiled: Extract<CompiledOp, MaterializedInputSelect>,
+): Promise<CompiledCte> {
+  return {
+    alias: compiled.alias,
+    values: compiled.values,
+    select: cleanSQL(
+      await compiled.prepareSelect(quoteIdentifier(table.name)),
+      table.sdb.expressionSyntax,
+    ),
+  };
 }
 
 function needsSpatial(op: RelationalOp): boolean {

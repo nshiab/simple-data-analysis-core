@@ -77,6 +77,73 @@ test("should fuse loadData with schema-dependent transforms", async () => {
   await sdb.close();
 });
 
+test("should fuse default unnest with native list operations", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("nativeListFused");
+    const queries = spyOnQueries(table);
+    const result = await table
+      .loadArray([
+        { team: "A", score: 12 },
+        { team: "B", score: 15 },
+        { team: "A", score: 18 },
+      ])
+      .nest("score", "team")
+      .unnest("score")
+      .selectColumns(["team", "score"])
+      .getData();
+    expect(result).toStrictEqual([
+      { team: "A", score: 12 },
+      { team: "A", score: 18 },
+      { team: "B", score: 15 },
+    ]);
+
+    const creates = queries.filter((query) =>
+      query.includes('CREATE OR REPLACE TABLE "nativeListFused"'),
+    );
+    expect(creates).toHaveLength(1);
+    expect(creates[0]).toContain("LIST(");
+    expect(creates[0]).toContain("UNNEST(");
+  } finally {
+    await sdb.close();
+  }
+});
+
+test("should validate the filtered input before fusing JSON expansion with later operations", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const table = sdb.newTable("validatedJson");
+    await table
+      .loadArray(
+        [
+          { id: 1, item: [10, 20] },
+          { id: 2, item: { price: 30 } },
+        ],
+        { columnTypes: { item: "JSON" } },
+      )
+      .run();
+    const queries = spyOnQueries(table);
+    const result = await table
+      .filter("id = 1")
+      .unnest("item", { indexColumn: "position" })
+      .selectColumns(["item"])
+      .getData();
+    expect(result).toStrictEqual([{ item: "10" }, { item: "20" }]);
+
+    const writes = queries.filter((query) =>
+      query.includes('CREATE OR REPLACE TABLE "validatedJson"'),
+    );
+    expect(writes).toHaveLength(2);
+    expect(writes[0]).toContain("WHERE id = 1");
+    expect(writes[1]).toContain("UNNEST(");
+    const validation = queries.findIndex((query) => query.includes("NOT IN ('NULL', 'ARRAY')"));
+    expect(validation).toBeGreaterThan(queries.indexOf(writes[0]));
+    expect(validation).toBeLessThan(queries.indexOf(writes[1]));
+  } finally {
+    await sdb.close();
+  }
+});
+
 test("should compose supported loadData table functions as sources", async () => {
   const sdb = new SimpleDB();
   const cases = [

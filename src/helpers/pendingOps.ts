@@ -6,6 +6,11 @@ import type { DuckDBValue } from "@duckdb/node-api";
  */
 export type TableSchema = { [column: string]: string };
 
+/** Builds a SELECT after validating or inspecting a materialized input table. */
+export type MaterializedInputSelect = {
+  prepareSelect: (input: string) => string | Promise<string>;
+};
+
 /**
  * A queued operation that can be expressed as a single SELECT over its input.
  * At flush time, consecutive fusable operations on the same table are
@@ -66,10 +71,12 @@ export type FusableOp = {
    */
   outputSchema?: (input: TableSchema) => TableSchema;
   /**
-   * Returns a single SELECT statement over `input`, which is either the
-   * quoted table name or the alias of the previous CTE in the fused chain.
+   * Returns a SELECT over `input`, either the quoted table or the previous
+   * CTE alias. Return a preparation callback when the schema requires reading
+   * the materialized input before building the SELECT. The prepared SELECT
+   * can still fuse with downstream operations.
    */
-  buildSelect: (input: string, schema: TableSchema) => string;
+  buildSelect: (input: string, schema: TableSchema) => string | MaterializedInputSelect;
 };
 
 /**

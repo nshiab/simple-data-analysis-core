@@ -1,3 +1,4 @@
+import foldIdentifier from "./foldIdentifier.ts";
 import quoteIdentifier from "./quoteIdentifier.ts";
 import type { TableSchema } from "./pendingOps.ts";
 
@@ -14,20 +15,34 @@ import type { TableSchema } from "./pendingOps.ts";
  * @param method - The method name, for the error message (e.g. "cloneColumn()").
  * @param allowInPlace - Columns whose name may already exist because the
  *   operation overwrites them in place rather than adding a new column.
+ * @param options.caseInsensitive - Compare names using DuckDB identifier
+ *   folding and check for collisions among the new names too.
  */
 export default function assertNewColumns(
   schema: TableSchema,
   newColumns: string[],
   method: string,
   allowInPlace: string[] = [],
+  options: { caseInsensitive?: boolean } = {},
 ): void {
+  let used: Set<string> | undefined;
+  if (options.caseInsensitive) {
+    const replaceable = new Set(allowInPlace.map(foldIdentifier));
+    used = new Set(
+      Object.keys(schema)
+        .map(foldIdentifier)
+        .filter((name) => !replaceable.has(name)),
+    );
+  }
   for (const column of newColumns) {
-    if (schema[column] !== undefined && !allowInPlace.includes(column)) {
+    const name = used === undefined ? column : foldIdentifier(column);
+    if (used?.has(name) ?? (schema[column] !== undefined && !allowInPlace.includes(column))) {
       throw new Error(
         `${method} the column ${quoteIdentifier(
           column,
         )} already exists. Remove it first or choose a different name for the new column.`,
       );
     }
+    used?.add(name);
   }
 }
