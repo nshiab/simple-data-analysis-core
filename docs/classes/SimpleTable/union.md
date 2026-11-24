@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.25**](../../index.md)
+[**Simple Data Analysis Core v2.1.26**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **union**(`column1`, `column2`, `newColumn`): `this`
 
-Defined in: [src/class/SimpleTable.ts:8883](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.25/src/class/SimpleTable.ts#L8883)
+Defined in: [src/class/SimpleTable.ts:8883](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.26/src/class/SimpleTable.ts#L8883)
 
 Computes the union of two geometries, creating a new geometry that represents the merged area of both.
 

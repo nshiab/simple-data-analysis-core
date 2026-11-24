@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.25**](../../index.md)
+[**Simple Data Analysis Core v2.1.26**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **reachable**(`sourceColumn`, `targetColumn`, `startNodes`, `options?`): [`SimpleTable`](../SimpleTable.md)
 
-Defined in: [src/class/SimpleTable.ts:3264](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.25/src/class/SimpleTable.ts#L3264)
+Defined in: [src/class/SimpleTable.ts:3264](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.26/src/class/SimpleTable.ts#L3264)
 
 Finds all nodes you can reach from one or more starting nodes, following
 one or more connections. The `direction` option lets you follow

@@ -1,4 +1,4 @@
-[**Simple Data Analysis Core v2.1.25**](../../index.md)
+[**Simple Data Analysis Core v2.1.26**](../../index.md)
 
 ***
 
@@ -8,7 +8,7 @@
 
 > **loadHtmlTable**(`url`, `options?`): `this`
 
-Defined in: [src/class/SimpleTable.ts:728](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.25/src/class/SimpleTable.ts#L728)
+Defined in: [src/class/SimpleTable.ts:728](https://github.com/nshiab/simple-data-analysis-core/blob/v2.1.26/src/class/SimpleTable.ts#L728)
 
 Loads a simple HTML table from a web page. A first row made entirely of
 `<th>` cells supplies the column names. Data rows are loaded as strings.
