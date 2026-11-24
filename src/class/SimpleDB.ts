@@ -1010,7 +1010,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable> extends S
    * Executes pending transformations, saves SDA metadata for writable persistent
    * databases, and closes the connection and instance. Also cleans up temporary
    * files and, by default, prunes unused table cache entries after a run that
-   * uses the cache. Does not copy, compact, or replace the database file.
+   * uses the cache.
    *
    * @example
    * ```ts
