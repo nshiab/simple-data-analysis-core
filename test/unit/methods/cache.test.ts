@@ -1285,6 +1285,35 @@ test("should clean the cache and log cleanup after the duration when calling clo
     files: ["sources.json", ...expectedIds.map((id) => `${id}.db`)].sort(),
   });
 });
+
+test("should preserve cache entries from other instances when pruning is disabled", async () => {
+  let computationRuns = 0;
+  const compute = (table: SimpleTable) => {
+    computationRuns++;
+    table.loadArray([{ value: 1 }]);
+  };
+
+  const first = new SimpleDB();
+  await first.newTable("sharedCacheEntry").cache(compute);
+  await first.close();
+
+  const second = new SimpleDB();
+  await second.newTable("helperCacheEntry").cache((table) => {
+    table.loadArray([{ value: 2 }]);
+  });
+  await second.close({ pruneCache: false });
+  await assertRejects(() => second.connection.run("SELECT 1"));
+
+  const third = new SimpleDB();
+  try {
+    const table = await third.newTable("sharedCacheEntry").cache(compute);
+    expect(await table.getData()).toStrictEqual([{ value: 1 }]);
+    expect(computationRuns).toBe(1);
+  } finally {
+    await third.close();
+  }
+});
+
 test("should cache dates and retrieve dates", async () => {
   // Example from Code Like a Journalist lesson about tabular data
 
