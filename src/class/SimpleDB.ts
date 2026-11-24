@@ -1009,7 +1009,8 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable> extends S
   /**
    * Executes pending transformations, saves SDA metadata for writable persistent
    * databases, and closes the connection and instance. Also cleans up temporary
-   * files and the cache. Does not copy, compact, or replace the database file.
+   * files and, by default, prunes unused table cache entries after a run that
+   * uses the cache. Does not copy, compact, or replace the database file.
    *
    * @example
    * ```ts
@@ -1018,21 +1019,28 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable> extends S
    * await sdb.close();
    * ```
    *
+   * @example
+   * ```ts
+   * // Preserve entries in a shared table cache when closing a test database.
+   * await sdb.close({ pruneCache: false });
+   * ```
+   *
+   * @param options.pruneCache - Whether to prune unused table cache entries. Defaults to `true`.
    * @returns A promise that resolves to the SimpleDB instance after cleanup.
    * @throws An error after cleanup when pending execution or cleanup fails.
    * @category Lifecycle
    */
-  async close(): Promise<SimpleDB> {
+  async close(options: { pruneCache?: boolean } = {}): Promise<SimpleDB> {
     if (this.#closePromise !== null) {
       return await this.#closePromise;
     }
     this.lifecycleState = "closing";
-    const closePromise = this.#close();
+    const closePromise = this.#close(options.pruneCache ?? true);
     this.#closePromise = closePromise;
     return await closePromise;
   }
 
-  async #close(): Promise<SimpleDB> {
+  async #close(pruneCache: boolean): Promise<SimpleDB> {
     let operationError: unknown;
     try {
       await flushAllTables(this);
@@ -1068,8 +1076,10 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable> extends S
       if (existsSync(tmpDir)) {
         rmSync(tmpDir, { recursive: true });
       }
-      // Defer cache logs until after the summary, while timing cleanup too.
-      cleanCache(this, (message) => cacheCleanupMessages.push(message));
+      if (pruneCache) {
+        // Defer cache logs until after the summary, while timing cleanup too.
+        cleanCache(this, (message) => cacheCleanupMessages.push(message));
+      }
     } catch (error) {
       cleanupErrors.push(error);
     }
