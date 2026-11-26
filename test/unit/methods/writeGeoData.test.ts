@@ -352,21 +352,18 @@ test("should overwrite every file in a shapefile dataset", async () => {
     const shp = `${directory}/data.shp`;
 
     await table.writeGeoData(shp);
-    table.selectRows(1);
+    table.filter("name = 'polygonB'");
     await table.writeGeoData(shp);
 
-    const files = [];
-    for (const entry of await nodeReaddir(directory, { withFileTypes: true })) {
-      files.push(entry.name);
-    }
-    expect(files.filter((file) => file.startsWith("tmp_data."))).toStrictEqual([]);
+    const files = await nodeReaddir(directory);
+    expect(files.filter((file) => file.startsWith("tmp_"))).toStrictEqual([]);
 
     const writtenTable = sdb.newTable();
     writtenTable.loadGeoData(shp);
     const writtenData = (await writtenTable.getGeoData()) as {
       features: unknown[];
     };
-    expect(writtenData.features.length).toStrictEqual(1);
+    expect(writtenData.features).toMatchObject([{ properties: { name: "polygonB" } }]);
   } finally {
     await sdb.close();
     await nodeRm(directory, { recursive: true });
