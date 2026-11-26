@@ -607,7 +607,9 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable> extends S
   }
 
   /**
-   * Retrieves an existing SimpleTable instance from the database.
+   * Retrieves a registered `SimpleTable` instance by name.
+   * For a table created with `customQuery()`, register it with `newTable(name)`
+   * before retrieving it with `getTable(name)`.
    *
    * @example
    * ```ts
@@ -832,6 +834,10 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable> extends S
    * Queries run in UTC. When data is returned, temporal values use the same
    * JavaScript representations as `SimpleTable.getData()`.
    *
+   * Pending table operations run before the SQL query. To use a table created
+   * by the query with the `SimpleTable` API, call `newTable()` with the name
+   * of the SQL table.
+   *
    * `customQuery()` bypasses the dependency and table-generation tracking used
    * by `SimpleTable.cache()`. Reading or changing a table with `customQuery()`
    * can therefore cause `cache()` to return stale data. Include a value that
@@ -840,8 +846,11 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable> extends S
    *
    * @example
    * ```ts
-   * // Execute a query without returning data
-   * await sdb.customQuery("CREATE TABLE young_employees AS SELECT * FROM employees WHERE age > 30");
+   * // Create a table with SQL, then use it with the SimpleTable API
+   * sdb.newTable("observations").loadArray([{ year: 2024, value: 0 }]);
+   * await sdb.customQuery("CREATE TABLE annual AS SELECT * FROM observations");
+   * const annual = sdb.newTable("annual");
+   * await annual.log();
    * ```
    *
    * @example
