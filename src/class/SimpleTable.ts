@@ -578,6 +578,17 @@ export default class SimpleTable extends Simple {
    *
    * @example
    * ```ts
+   * // Keep the source filename alongside selected columns
+   * await table
+   *   .loadData("./data/*.json", {
+   *     includeFilename: true,
+   *     columns: ["year", "temperature_c", "filename"],
+   *   })
+   *   .log();
+   * ```
+   *
+   * @example
+   * ```ts
    * // Load only specific columns from a CSV file
    * await table.loadData("./employees.csv", { columns: ["name", "salary"] }).log();
    * ```
@@ -599,10 +610,10 @@ export default class SimpleTable extends Simple {
    * @param options.autoDetect - A boolean indicating whether to automatically detect the data format. Defaults to `true`.
    * @param options.conditions - A SQL `WHERE` clause expression, without the `WHERE` keyword, to filter source rows before applying `limit`. Can reference source columns excluded from `columns`.
    * @param options.limit - A number indicating the maximum number of matching rows to load, after applying `conditions` if provided. Defaults to all matching rows.
-   * @param options.includeFilename - A boolean indicating whether to include the filename as a new column in the loaded data. Defaults to `false`.
+   * @param options.includeFilename - Set to `true` to expose the source path in a `filename` column for CSV, DSV, JSON, and Parquet files. If `columns` is nonempty, include `"filename"` in that list to keep it. Defaults to `false`.
    * @param options.unifyColumns - A boolean indicating whether to unify columns across multiple files when their structures differ. Missing columns will be filled with `NULL` values. Defaults to `false`.
    * @param options.columnTypes - An object mapping column names to their expected data types. By default, types are inferred. Geometry types are not supported; use loadGeoData() instead.
-   * @param options.columns - An array of column names to load. When provided, only the specified columns are loaded, reducing memory usage and improving load times. Not supported for Excel files — combining `columns` with Excel files throws an error. If an invalid column name is provided, DuckDB will throw its native error. An empty array behaves the same as omitting the option (loads all columns). Defaults to loading all columns.
+   * @param options.columns - An array of column names to load. A nonempty array keeps only the listed columns, which can reduce memory usage and improve load times. Combining a nonempty list with Excel files throws an error. If an invalid column name is provided, DuckDB will throw its native error. An empty array behaves the same as omitting the option (loads all columns).
    * @param options.header - A boolean indicating whether the file has a header row. Applicable to CSV files. Defaults to `true`.
    * @param options.allText - A boolean indicating whether all columns should be treated as text. Applicable to CSV files. Defaults to `false`.
    * @param options.delim - The delimiter used in the file. Applicable to CSV and DSV files. By default, the delimiter is inferred.

@@ -691,6 +691,42 @@ test("should load data from multiple files and add a column with the file name."
   await sdb.close();
 });
 
+test("loadData keeps the generated filename when explicitly selected", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "sda-load-filenames-"));
+  const firstFile = join(directory, "first.json");
+  const secondFile = join(directory, "second.json");
+  const sdb = new SimpleDB();
+  try {
+    await nodeWriteFile(firstFile, '[{"year":2024,"temperature_c":11.5}]');
+    await nodeWriteFile(secondFile, '[{"year":2025,"temperature_c":12.5}]');
+    const files = join(directory, "*.json");
+
+    const selected = sdb.newTable().loadData(files, {
+      includeFilename: true,
+      columns: ["year", "temperature_c"],
+    });
+    expect(await selected.getColumns()).toStrictEqual(["year", "temperature_c"]);
+
+    const withFilename = sdb.newTable().loadData(files, {
+      includeFilename: true,
+      columns: ["year", "temperature_c", "filename"],
+    });
+    expect(await withFilename.sort({ year: "asc" }).getData()).toStrictEqual([
+      { year: 2024, temperature_c: 11.5, filename: firstFile },
+      { year: 2025, temperature_c: 12.5, filename: secondFile },
+    ]);
+
+    const allColumns = sdb.newTable().loadData(files, {
+      includeFilename: true,
+      columns: [],
+    });
+    expect(await allColumns.getColumns()).toStrictEqual(["year", "temperature_c", "filename"]);
+  } finally {
+    await sdb.close();
+    await nodeRm(directory, { recursive: true });
+  }
+});
+
 test("should load and unify multiple files matching a glob", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable();
