@@ -29,7 +29,7 @@ import {
   listRegisteredTables,
   registerTable,
 } from "../helpers/tableRegistry.ts";
-import formatMissingTables from "../helpers/formatMissingTables.ts";
+import getTable from "../methods/getTable.ts";
 
 /**
  * Manages a DuckDB database instance, providing a simplified interface for database operations.
@@ -607,9 +607,9 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable> extends S
   }
 
   /**
-   * Retrieves a registered `SimpleTable` instance by name.
-   * For a table created with `customQuery()`, register it with `newTable(name)`
-   * before retrieving it with `getTable(name)`.
+   * Retrieves an existing table by name. If the table was created with
+   * `customQuery()`, registers a `SimpleTable` handle on first lookup.
+   * Catalog lookup can open ordinary tables in the current database and schema.
    *
    * @example
    * ```ts
@@ -623,20 +623,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable> extends S
    * @category Table Management
    */
   async getTable(name: string): Promise<Table> {
-    await this.start();
-    const tables = this.getTables();
-    const table = tables.find((t) => t.name === name);
-    if (table) {
-      return table;
-    } else {
-      throw new Error(
-        formatMissingTables(
-          "getTable()",
-          [name],
-          tables.map((availableTable) => availableTable.name),
-        ),
-      );
-    }
+    return await getTable(this, name);
   }
 
   /**
@@ -835,8 +822,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable> extends S
    * JavaScript representations as `SimpleTable.getData()`.
    *
    * Pending table operations run before the SQL query. To use a table created
-   * by the query with the `SimpleTable` API, call `newTable()` with the name
-   * of the SQL table.
+   * by the query with the `SimpleTable` API, retrieve it with `getTable()`.
    *
    * `customQuery()` bypasses the dependency and table-generation tracking used
    * by `SimpleTable.cache()`. Reading or changing a table with `customQuery()`
@@ -849,7 +835,7 @@ export default class SimpleDB<Table extends SimpleTable = SimpleTable> extends S
    * // Create a table with SQL, then use it with the SimpleTable API
    * sdb.newTable("observations").loadArray([{ year: 2024, value: 0 }]);
    * await sdb.customQuery("CREATE TABLE annual AS SELECT * FROM observations");
-   * const annual = sdb.newTable("annual");
+   * const annual = await sdb.getTable("annual");
    * await annual.log();
    * ```
    *

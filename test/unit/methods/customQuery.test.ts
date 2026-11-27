@@ -194,7 +194,7 @@ test("should use a SQL-created table with the SimpleTable API", async () => {
     sdb.newTable("observations").loadArray([{ year: 2024, value: 0 }]);
     await sdb.customQuery("CREATE TABLE annual AS SELECT * FROM observations");
 
-    const annual = sdb.newTable("annual");
+    const annual = await sdb.getTable("annual");
 
     expect(await annual.getData()).toStrictEqual([{ year: 2024, value: 0 }]);
     expect(await sdb.getTable("annual")).toBe(annual);

@@ -35,6 +35,7 @@ export function listRegisteredTables<Table extends SimpleTable>(
 export function registerTable<Table extends SimpleTable>(
   simpleDB: SimpleDB<Table>,
   table: Table,
+  origin: "new" | "existing" = "new",
 ): void {
   const TableClass = simpleDB.tableClass;
   if (!(table instanceof TableClass)) {
@@ -44,7 +45,7 @@ export function registerTable<Table extends SimpleTable>(
   const tables = getMutableTables(simpleDB);
   assertTableNameAvailable(simpleDB, table.name);
   tables.push(table);
-  recordCacheTableCreation(table);
+  if (origin === "new") recordCacheTableCreation(table);
 }
 
 export function ensureTableRegistered<Table extends SimpleTable>(

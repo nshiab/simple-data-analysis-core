@@ -1522,6 +1522,58 @@ test("cache cleans up materialized and queued temporary tables after rejection",
   }
 });
 
+test("cache tracks dependencies opened with getTable", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery("CREATE TABLE annual AS SELECT 2024 AS year");
+    const output = sdb.newTable("discoveredDependencyOutput");
+    let runs = 0;
+    const compute = async (table: SimpleTable) => {
+      runs++;
+      const annual = await sdb.getTable("annual");
+      assertThrows(() => annual.filter("year = 2024"), Error, "cannot modify pre-existing table");
+      table.loadArray([{ count: (await annual.getData()).length }]);
+    };
+
+    await output.cache(compute);
+    await output.cache(compute);
+    expect(runs).toBe(1);
+
+    const annual = await sdb.getTable("annual");
+    await annual.loadArray([{ year: 2024 }, { year: 2025 }]).run();
+    await output.cache(compute);
+    expect(runs).toBe(2);
+    expect(await output.getData()).toStrictEqual([{ count: 2 }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
+test("cache cleanup preserves a discovered table and removes a leaked temporary table", async () => {
+  const sdb = new SimpleDB();
+  try {
+    await sdb.customQuery("CREATE TABLE annual AS SELECT 2024 AS year");
+    const output = sdb.newTable("discoveredDependencyCleanup");
+    await assertRejects(
+      () =>
+        output.cache(async () => {
+          const annual = await sdb.getTable("annual");
+          expect(await annual.getData()).toStrictEqual([{ year: 2024 }]);
+          const scratch = sdb.newTable("scratch").loadArray([{ year: 2025 }]);
+          expect(await sdb.getTable("scratch")).toBe(scratch);
+          await scratch.run();
+        }),
+      Error,
+      'cache() created table "scratch" but did not remove it',
+    );
+    expect(await sdb.getTableNames()).toStrictEqual(["annual"]);
+    const annual = await sdb.getTable("annual");
+    expect(await annual.getData()).toStrictEqual([{ year: 2024 }]);
+  } finally {
+    await sdb.close();
+  }
+});
+
 test("cache does not execute leaked temporary table builders", async () => {
   const sdb = new SimpleDB();
   try {

@@ -8129,7 +8129,7 @@ export default class SimpleTable extends Simple {
    * await sdb.customQuery(`CREATE TABLE nested_example AS SELECT
    *   [42::BIGINT, 9007199254740993::BIGINT] AS ids,
    *   {'count': 2::INTEGER, 'amount': 123.450::DECIMAL(6,3)} AS details`);
-   * const nested = sdb.newTable("nested_example");
+   * const nested = await sdb.getTable("nested_example");
    * const rows = await nested.getData();
    * // [{ ids: ["42", "9007199254740993"], details: { count: 2, amount: "123.450" } }]
    * await nested.log();
@@ -9370,10 +9370,10 @@ export default class SimpleTable extends Simple {
    * line wrapping where safe.
    *
    * `cache()` automatically tracks whether earlier SDA operations changed the
-   * table. It also records every other already registered `SimpleTable` read
-   * through `SimpleTable` methods while `compute` runs and invalidates the
-   * cached step when any of their generations change. Tables created inside
-   * `compute` are part of the computation itself and are not dependencies.
+   * table. It also tracks existing tables read through `SimpleTable` methods,
+   * including those opened with `getTable()` inside `compute`. A change to any
+   * tracked table invalidates the cached step. Tables created inside `compute`
+   * are part of the computation itself and are not dependencies.
    *
    * Inside `compute`, you may modify the table being cached and create or
    * modify temporary tables, provided you remove them before the callback
