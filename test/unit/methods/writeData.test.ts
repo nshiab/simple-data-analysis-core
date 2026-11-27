@@ -31,6 +31,29 @@ test("should write a csv file", async () => {
   await sdb.close();
 });
 
+test("should preserve an existing csv file when writing its replacement fails", async () => {
+  const sdb = new SimpleDB();
+  try {
+    const file = `${output}overwrite.csv`;
+    await sdb
+      .newTable()
+      .loadArray([{ value: "previous export" }])
+      .writeData(file);
+    const previous = readFileSync(file);
+
+    await sdb.customQuery(`
+      CREATE VIEW broken_export AS
+      SELECT CASE WHEN i = 9999 THEN error('intentional csv write failure') ELSE i::VARCHAR END AS value
+      FROM range(10000) AS rows(i)
+    `);
+    const replacement = sdb.newTable("broken_export");
+    await expect(replacement.writeData(file)).rejects.toThrow("intentional csv write failure");
+    expect(readFileSync(file)).toStrictEqual(previous);
+  } finally {
+    await sdb.close();
+  }
+});
+
 test("should distinguish null from numeric zero in csv output", async () => {
   const sdb = new SimpleDB();
   try {
