@@ -9243,6 +9243,9 @@ export default class SimpleTable extends Simple {
    * If the specified path does not exist, it will be created.
    * In CSV files, `NULL` values become empty fields, while numeric zero remains numeric (e.g., `0.0`).
    *
+   * When a single writer overwrites an existing local CSV, the previous file
+   * stays in place until the new export succeeds.
+   *
    * @example
    * ```ts
    * // Write data to a CSV file
