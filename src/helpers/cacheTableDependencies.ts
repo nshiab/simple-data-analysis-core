@@ -95,6 +95,23 @@ export function recordCacheTableCreation(table: SimpleTable): void {
   }
 }
 
+/** Protects a table found by getTable() that the callback does not own. */
+export function recordCacheTableLookup(table: SimpleTable): void {
+  for (const frame of dependencyContext.getStore() ?? []) {
+    if (
+      frame.open &&
+      table.sdb === frame.cachedTable.sdb &&
+      !frame.availableBeforeCompute.has(table) &&
+      !frame.created.has(table)
+    ) {
+      frame.availableBeforeCompute.set(table, {
+        tableName: table.name,
+        generationId: peekTableGeneration(table),
+      });
+    }
+  }
+}
+
 /** Tracks queued work across nested callbacks, including async barriers. */
 export function recordCacheTableOperation(table: SimpleTable, op: PendingOp): void {
   for (const frame of dependencyContext.getStore() ?? []) {

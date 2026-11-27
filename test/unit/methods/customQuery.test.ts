@@ -187,6 +187,22 @@ test("should return non-relational results", async () => {
   ).toStrictEqual([{ name: "listed" }]);
   await sdb.close();
 });
+
+test("should use a SQL-created table with the SimpleTable API", async () => {
+  const sdb = new SimpleDB();
+  try {
+    sdb.newTable("observations").loadArray([{ year: 2024, value: 0 }]);
+    await sdb.customQuery("CREATE TABLE annual AS SELECT * FROM observations");
+
+    const annual = await sdb.getTable("annual");
+
+    expect(await annual.getData()).toStrictEqual([{ year: 2024, value: 0 }]);
+    expect(await sdb.getTable("annual")).toBe(annual);
+  } finally {
+    await sdb.close();
+  }
+});
+
 test("should work with ==", async () => {
   const sdb = new SimpleDB();
   const table = sdb.newTable("employees");
