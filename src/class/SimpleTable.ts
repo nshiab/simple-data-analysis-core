@@ -9243,12 +9243,8 @@ export default class SimpleTable extends Simple {
    * If the specified path does not exist, it will be created.
    * In CSV files, `NULL` values become empty fields, while numeric zero remains numeric (e.g., `0.0`).
    *
-   * When a single writer overwrites an existing local CSV, DuckDB writes the
-   * replacement to a temporary file and replaces the destination only after the
-   * write succeeds. Readers can still open the previous CSV while the replacement
-   * is being written. An interrupted write leaves the previous CSV in place and
-   * may leave the temporary file beside it. See the
-   * [DuckDB COPY options](https://duckdb.org/docs/1.5/sql/statements/copy#copy--to-options).
+   * When a single writer overwrites an existing local CSV, the previous file
+   * stays in place until the new export succeeds.
    *
    * @example
    * ```ts
